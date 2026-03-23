@@ -1,0 +1,253 @@
+%% Define simulation parameters
+root = '/storage/coda1/p-jueda3/0/hnieves6/MRE Inversion/Inclusion';
+inclusion_radius = [2.5 1.25 0.625 0.3125]/100; % Radii in [m]
+num_inclusions_per_size = [10 20 40 60]; 
+total_data = 100;
+img_size = [256,256];
+fov = [0.2, 0.2]; % field of view [m]
+dx = fov(1)/img_size(1); % side length of pixels in [m]
+mfre = 80; % mechanical frequency [Hz]
+background_mu = 3; % Background stiffness in kPa
+inclusion_mu = 6; % Inclusion stiffness in kPa
+
+inclusion_index = 1; % select which inclusion to run the script for
+radius = inclusion_radius(inclusion_index)/dx;
+
+radius_str = strrep(num2str(inclusion_radius(inclusion_index)*100), '.', '_');
+radius_folder = ['R' radius_str 'cm/'];
+file = fullfile(root,radius_folder);
+if ~exist(file, 'dir')
+    mkdir(file);
+end
+% WaitBar = '【';
+%simulated_wave = zeros(img_size(1),img_size(2),1500);
+%rng(42); % Set random seed
+
+%% Generate simulated shear modulus map
+tic
+parfor data_num = 1:total_data
+    rng(data_num+42);
+    
+    background_mat = background_mu*ones(img_size);
+    
+    inclusion_mat = zeros(img_size);
+    cxs = zeros(1,num_inclusions_per_size(inclusion_index));
+    cys = zeros(1,num_inclusions_per_size(inclusion_index));
+
+    for inc_num = 1:num_inclusions_per_size(inclusion_index)
+        % Randomly define the location of the center of the inclusion
+        cx = randi(img_size(1)); cy = randi(img_size(2));
+        center_distances = sqrt((cx-cxs(1:inc_num)).^2+(cy-cys(1:inc_num)).^2);
+        min_distance = min(center_distances);
+
+        % Ensure minimal overlap from randomized circles
+        while inc_num>=2 && min_distance<radius*1.5
+            cx = randi(img_size(1)); cy = randi(img_size(2));
+            center_distances = sqrt((cx-cxs(1:inc_num)).^2+(cy-cys(1:inc_num)).^2);
+            min_distance = min(center_distances);
+        end
+
+        % Store Center
+        cxs(inc_num) = cx;
+        cys(inc_num) = cy;
+
+        x=(1:img_size(1)).'; y=1:img_size(2);
+        binaryMap=(x-cx).^2+(y-cy).^2 <= (radius)^2;
+        % OR operation to store inclusion map
+        inclusion_mat = inclusion_mat | binaryMap;
+    end
+    mat = background_mat+inclusion_mat*(inclusion_mu-background_mu);
+        
+        
+    % Show shear modulus map
+%     figure,
+%     subplot(131), imshow(background_mat,[0 10]), colorbar;
+%     subplot(132), imshow(inclusion_mat,[0 10]), colorbar;
+%     subplot(133), imshow(mat,[0 10]), colorbar;
+%     colormap("parula")
+
+    % Driver and Weights Initialization
+    driver = zeros(img_size);
+    driver(1, :) = ones(1, img_size(2));
+    weights = ones(img_size(1)+2, img_size(2)+2);
+    abs_thick = min(floor(0.05*img_size(1)), floor(0.05*img_size(2)));
+    abs_rate = 0.3 / abs_thick;
+    
+    % Generate displacement 
+    for ix = 1:img_size(1)
+        for iy = 1:img_size(2)
+            i = 0;
+            j = 0;
+            if (iy < abs_thick + 1)
+                i = abs_thick + 1 - iy;
+            end
+%             if (ix < abs_thick + 1)
+%                 j = abs_thick + 1 - ix;
+%             end
+            if (img_size(2) - abs_thick < iy)
+                i = iy - img_size(2) + abs_thick;
+            end
+            if (img_size(1) - abs_thick < ix)
+                j = ix - img_size(1) + abs_thick;
+            end
+            if (i == 0 && j == 0)
+                continue
+            end
+            rr = abs_rate * abs_rate * double(i*i + j*j);
+            weights(1+ix, 1+iy) = exp(-rr);
+        end
+    end
+    % Wave Parameters
+    fov = [0.2, 0.2]; % field of view [m]
+    rho = 1000 * ones(img_size); % density [kg/m3]
+    mu = 1000*mat; % shear modulus [N/m2]
+    nx = img_size(1);
+    ny = img_size(2);
+    %dx = fov(1)/nx; % Spatial resolution
+    dy = fov(2)/ny; % Spatial resolution
+    t_total = 0.2; % recording duration [s]
+    nt = 2000;
+    dt = t_total / nt;
+    t = dt * linspace(1,nt,nt);
+    
+    source_term = sin(2*pi*mfre*t);
+    dt2rho_src = dt^2 / max(max(driver .* rho)); % Scaling factor for the source term accounting for time step, density, and spatial resolution
+    force_x = 0*(source_term*dt2rho_src/(dx*dy)).' .* reshape(driver,[1 256 256]); % Modulated by soruce term and normalized by spatial resolution
+    force_y = 1*(source_term*dt2rho_src/(dx*dy)).' .* reshape(driver,[1 256 256]);
+    
+    % simulate wave field
+    ux1 = zeros(nx+2, ny+2); % wave field at t-1
+    uy1 = zeros(nx+2, ny+2);
+    ux2 = zeros(nx+2, ny+2); % wave field at t
+    uy2 = zeros(nx+2, ny+2);
+    ux3 = zeros(nx+2, ny+2); % wave field at t+1
+    uy3 = zeros(nx+2, ny+2);
+    % Discretization parameters
+    dxx = dx^2;
+    dyy = dy^2;
+    dxy = dx*dy;
+    dyx = dx*dy;
+    dtt = dt^2;
+    
+    % calculate - FDM
+    offset = 0;
+    wave = zeros(256,256,8);
+    offsets = 8;
+    %figure,
+    for it = 1:nt
+        ux3 = zeros(size(ux3));
+        uy3 = zeros(size(uy3));
+        % derivatives
+        % Uy
+        duy_dyy = (uy2(2:end-1,1:end-2)-2*uy2(2:end-1,2:end-1)+uy2(2:end-1,3:end)) ./ dyy;
+        duy_dxx = (uy2(1:end-2,2:end-1)-2*uy2(2:end-1,2:end-1)+uy2(3:end,2:end-1)) ./ dxx;
+        duy_dyx = ((uy2(1:end-2,3:end)-uy2(3:end,3:end))-(uy2(1:end-2,1:end-2)-uy2(3:end,1:end-2))) ./ (4.0*dyx);
+        % Ux
+        dux_dxx = (ux2(1:end-2,2:end-1)-2*ux2(2:end-1,2:end-1)+ux2(3:end,2:end-1)) ./ dxx;
+        dux_dyy = (ux2(2:end-1,1:end-2)-2*ux2(2:end-1,2:end-1)+ux2(2:end-1,3:end)) ./ dyy;
+        dux_dxy = ((ux2(1:end-2,3:end)-ux2(3:end,3:end))-(ux2(1:end-2,1:end-2)-ux2(3:end,1:end-2))) ./ (4.0*dxy);
+        % wave equations
+        Py = mu.*(duy_dxx + duy_dyy);
+        Px = mu.*(dux_dxx + dux_dyy);
+%         Px = mu.*(dux_dyy + duy_dyx);
+%         Py = mu.*(dux_dxy + duy_dxx);
+        uy3(2:end-1,2:end-1) = Py./rho*dtt + 2*uy2(2:end-1,2:end-1) - uy1(2:end-1,2:end-1);
+        ux3(2:end-1,2:end-1) = Px./rho*dtt + 2*ux2(2:end-1,2:end-1) - ux1(2:end-1,2:end-1);
+        % add driver
+        ux3(2:end-1,2:end-1) = ux3(2:end-1,2:end-1) + squeeze(force_x(it,:,:));
+        uy3(2:end-1,2:end-1) = uy3(2:end-1,2:end-1) + squeeze(force_y(it,:,:));
+        ux1 = ux2 .* weights;
+        ux2 = ux3 .* weights;
+        uy1 = uy2 .* weights;
+        uy2 = uy3 .* weights;
+        % simulated_wave(:,:,it) = ux3(2:end-1,2:end-1); % keeps x displacements, which are not used since force applied is in y direction so we
+                                                       % care about y
+                                                       % displacements
+%         % Show wave images
+%         c1 = [0 0 1]; 
+%         c2 = [0 0 0]; 
+%         c3 = [1 0 0]; 
+%         n = 256; 
+%         cmap = interp1([1 n/2 n], [c1; c2; c3], 1:n);
+%         if mod(it,10) == 0 
+%             % u = sqrt(ux3.^2 + uy3.^2);
+%             imagesc(uy3(2:end-1,2:end-1), [-1e-4 1e-4]);
+%             colorbar; 
+%             colormap(cmap); 
+%             xlabel('m'); 
+%             ylabel('m');
+%             title(['Step = ',num2str(it),'/',num2str(nt),', Time: ',sprintf('%.4f',t(it)),' sec']);
+%             drawnow;
+%          end
+        if it > nt - floor(nt/(t_total*mfre))
+            if mod(it-nt+floor(nt/(t_total*mfre)),floor(1/mfre/offsets/dt)) == 0
+                offset = offset+1;
+                wave(:,:,offset) = uy3(2:end-1,2:end-1); % store y displacements since we are interested in motion along axes of the applied force
+            end
+        end
+    end
+%     max_wave = max(max(max(wave)));
+%     min_wave = min(min(min(wave)));
+%     wave = (wave-min_wave)./(max_wave-min_wave);
+    index = data_num;
+    parsave([file,num2str(data_num,'%06d')],wave, mu, mfre, index, fov)
+end
+toc
+%     %%%%% show generation progress %%%%%
+%     if data_num < total_data
+%         if data_num <= 50
+%             w = [WaitBar '/' num2str((data_num / total_data) * 100, '%.2f') '%'];
+%         else
+%             w = [WaitBar num2str((data_num / total_data) * 100, '%.2f') '%'];
+%         end
+%     else
+%         w = [WaitBar '100%'];
+%     end
+%     clc
+%     ind = regexp(w,'\d','start');
+%     if data_num < total_data
+%         disp([w w(2 : ind(1) - 1)]);
+%     else
+%         disp([w w(2 : ind(1) - 1) '】']);
+%     end
+%     
+%     WaitBar = w(1 : ind(1) - 1);
+
+%% show different offsets wave images
+
+
+% figure, 
+% for i = 1:8
+%     subplot(2,4,i), imshow(wave(:,:,i), [-9e-4 9e-4]), colormap(cmap)
+% end
+
+% figure, 
+% for i = 1:8
+%     subplot(2,4,i), imshow(wave_noise(:,:,i), [0 1]), colormap(cmap)
+% end
+% figure,
+% subplot(131), imshow(sm_LFE, [0 15]), title('LFE'), colormap("jet"), colorbar 
+% subplot(132), imshow(sm_DI,[0 15]), title('DI'), colormap("jet"), colorbar
+% subplot(133), imshow(mu/1000,[0 15]), title('True Mu'), colormap("jet"), colorbar
+
+
+% %% save gif
+% gif_file = 'C:\Users\hnieves6\Documents\MRE_Pinversion_Data\Training\';
+% max_wave = max(max(max(simulated_wave)));
+% min_wave = min(min(min(simulated_wave)));
+% norm_simulated_wave = (simulated_wave-min_wave)./(max_wave-min_wave);
+% % figure, imshow(norm_simulated_wave(:,:,750),[])
+% for i = 1:1500
+%     if mod(i,10) == 0
+%         frame = norm_simulated_wave(:,:,i);
+%         [indexedFrame, cm] = gray2ind(frame, 256);
+%         rgbFrame = ind2rgb(indexedFrame, cmap);
+%         [imind, cm] = rgb2ind(rgbFrame, 256);
+%         if i == 10
+%             imwrite(imind, cm, gif_file, 'gif', 'LoopCount', inf, 'DelayTime', 0.1);
+%         else
+%             imwrite(imind, cm, gif_file, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
+%         end
+%     end
+% end
+% figure, imshow(mu/1000,[0,12]),colormap("parula")

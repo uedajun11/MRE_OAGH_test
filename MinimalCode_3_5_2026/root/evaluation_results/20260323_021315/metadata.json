@@ -1,0 +1,30 @@
+{
+  "timestamp": "20260323_021315",
+  "run_ids": [
+    "run_20260311_235821",
+    "run_20260312_112910",
+    "run_20260312_112911",
+    "run_20260312_114204"
+  ],
+  "num_models": 4,
+  "datasets": [
+    "Main_Test",
+    "Inclusion_R0.3125cm",
+    "Inclusion_R0.625cm",
+    "Inclusion_R1.25cm",
+    "Inclusion_R2.5cm"
+  ],
+  "snr_levels": [
+    30,
+    25,
+    20,
+    15
+  ],
+  "total_samples_evaluated": 22400,
+  "models_evaluated": [
+    "FDTDNet/residual/het/oagh/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/het/oagh_c/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/oagh/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/oagh_c/lam_data1_0/lam_phys1_0/bs64"
+  ]
+}
