@@ -47,7 +47,7 @@ CMD="apptainer exec --nv \
 --mse-in-k-space \
 --heterogeneous \
 --harmonization oagh \
---warmup-epochs 10"
+--warmup-epochs 50"
 
 echo "Running command:"
 echo $CMD

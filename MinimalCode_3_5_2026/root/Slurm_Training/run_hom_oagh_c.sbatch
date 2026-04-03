@@ -46,7 +46,7 @@ CMD="apptainer exec --nv \
 --lambda-physics 1.0 \
 --mse-in-k-space \
 --harmonization oagh_c \
---warmup-epochs 10"
+--warmup-epochs 50"
 
 echo "Running command:"
 echo $CMD

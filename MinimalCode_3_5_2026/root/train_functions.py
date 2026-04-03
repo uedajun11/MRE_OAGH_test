@@ -63,7 +63,7 @@ def train_net(net, device, train_loader, optimizer, grad_scaler, loss_f, batch_s
         with torch.cuda.amp.autocast():  # Mixed precision training
             k_pred = net(inputs)
             #print(f"Outputs shape: {outputs.shape}, GT shape: {gt.shape}")
-            mu_pred = wave_number_to_shear_stiffness(k_pred, mfre, fov)
+            mu_pred = wave_number_to_shear_stiffness(k_pred, mfre, fov, clamp_mu=(100, 15000))
 
             if use_physics:
                 if not torch.isfinite(k_pred).all():
@@ -195,7 +195,7 @@ def train_net_oagh(net, device, train_loader, optimizer, grad_scaler, loss_f,
         # during backward (especially physics losses with large rho*omega^2 terms).
         # Using float32 throughout avoids this issue.
         k_pred = net(inputs.float())
-        mu_pred = wave_number_to_shear_stiffness(k_pred, mfre, fov_batch)
+        mu_pred = wave_number_to_shear_stiffness(k_pred, mfre, fov_batch, clamp_mu=(100, 15000))
 
         if use_physics:
             if not torch.isfinite(k_pred).all():
@@ -358,7 +358,7 @@ def setup_and_run_train(
     orthogonalize_het=False,
     mse_in_k_space=False,
     harmonization='none',
-    warmup_epochs=10
+    warmup_epochs=50
 ):
     """
     Setup and run training with unified loss interface.
@@ -376,8 +376,8 @@ def setup_and_run_train(
     set_seed(42)
 
     # Validate harmonization config
-    assert harmonization in ('none', 'oagh', 'oagh_c'), \
-        f"Unknown harmonization: {harmonization}. Choose from: none, oagh, oagh_c"
+    assert harmonization in ('none', 'oagh', 'oagh_c', 'pcgrad', 'gradnorm'), \
+        f"Unknown harmonization: {harmonization}. Choose from: none, oagh, oagh_c, pcgrad, gradnorm"
     if harmonization != 'none' and loss_type == 'mse':
         raise ValueError(
             f"OAGH harmonization requires a physics loss (residual or ratio), "
@@ -769,7 +769,7 @@ def _soft_clamp(x, lo, hi, sharpness=10.0):
     return x
 
 
-def wave_number_to_shear_stiffness(k_pred, mfre, fov, rho=1000.0, eps=1e-6, clamp_mu=(100, 15000)):
+def wave_number_to_shear_stiffness(k_pred, mfre, fov, rho=1000.0, eps=1e-6, clamp_mu=None):
     """
     Convert predicted wave number to shear stiffness (mu)
 
@@ -778,7 +778,11 @@ def wave_number_to_shear_stiffness(k_pred, mfre, fov, rho=1000.0, eps=1e-6, clam
         mfre (Tensor):   [B,1,1,1] mechanical frequency (Hz)
         fov (Tensor):    [B] field of view scalar
         eps (float):     numerical stability constant
-        clamp_mu (tuple): (min, max) for soft clamping mu
+        clamp_mu (tuple or None): (min, max) for soft clamping mu.
+            None  → no upper clamp, only a soft lower bound at 1 Pa
+                    (use for evaluation so metrics reflect true predictions).
+            tuple → soft clamp to [min, max], e.g. (100, 15000) for training
+                    stability during early epochs.
 
     Returns:
         mu (Tensor): [B, 1, H, W] shear stiffness map
@@ -799,7 +803,13 @@ def wave_number_to_shear_stiffness(k_pred, mfre, fov, rho=1000.0, eps=1e-6, clam
     omega = 2 * torch.pi * mfre
     mu_pa = rho * omega**2 / k_safe**2
 
-    # Soft clamp mu to physical range [100, 15000] Pa
-    mu_pa = _soft_clamp(mu_pa, clamp_mu[0], clamp_mu[1], sharpness=0.01)
+    if clamp_mu is not None:
+        # Soft clamp mu to specified range (use during training for stability)
+        mu_pa = _soft_clamp(mu_pa, clamp_mu[0], clamp_mu[1], sharpness=0.01)
+    else:
+        # Evaluation mode: only enforce a soft lower bound (mu >= 1 Pa)
+        # to avoid negative/zero values, but no upper bound so metrics
+        # reflect true model predictions
+        mu_pa = _softplus_lower(mu_pa, 1.0, sharpness=10.0)
     return mu_pa
 

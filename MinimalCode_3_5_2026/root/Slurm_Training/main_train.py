@@ -78,15 +78,16 @@ def parse_args():
 
     # OAGH / OAGH-C gradient harmonization
     parser.add_argument('--harmonization', type=str, default='none',
-                        choices=['none', 'oagh', 'oagh_c'],
+                        choices=['none', 'oagh', 'oagh_c', 'pcgrad', 'gradnorm'],
                         help='Gradient harmonization method: none (fixed lambda), '
-                             'oagh (discrete 3-tier), or oagh_c (continuous bridge). '
+                             'oagh (discrete 3-tier), oagh_c (continuous bridge), '
+                             'pcgrad (orthogonal projection), or gradnorm (magnitude rebalancing). '
                              'Requires --loss-type residual or ratio.')
-    parser.add_argument('--warmup-epochs', type=int, default=10,
+    parser.add_argument('--warmup-epochs', type=int, default=50,
                         help='Number of standard training epochs before OAGH kicks in. '
                              'During warm-up, uses combined loss with fixed lambdas '
                              'to bring k_pred into physical range. Only used when '
-                             '--harmonization is not none. Default: 10')
+                             '--harmonization is not none. Default: 50')
 
     return parser.parse_args()
 

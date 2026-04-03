@@ -118,7 +118,17 @@ class ResidualLoss(nn.Module):
         self.viz = viz
         self.diagnostics = diagnostics
 
-    def forward(self, wave_tensors, mu_pred, mfre, W=1.0):
+    def forward(self, wave_tensors, mu_pred, mfre, W=1.0, k_pred=None):
+        """
+        Args:
+            wave_tensors: (B, C, H, W, T) complex wave field
+            mu_pred: (B, 1, H, W) predicted stiffness [Pa]  (used only if k_pred is None)
+            mfre: (B,) or scalar, frequency [Hz]
+            W: weight map
+            k_pred: (B, 1, H, W) predicted wave number [rad/m] (optional).
+                     When provided, k^2 and log(mu) are derived directly from k_pred,
+                     bypassing the mu clamp and preserving gradient flow.
+        """
 
         eps_val = 1e-8
         device = wave_tensors.device
@@ -148,10 +158,17 @@ class ResidualLoss(nn.Module):
         # --- normalize weights ---
         W_norm = W_map / (W_map.view(B, -1).sum(dim=1).view(B, 1, 1) + eps_val)
 
-        # --- spatial k^2 from mu ---
         omega = 2 * torch.pi * mfre.view(B, 1, 1)
-        k2_data = (self.rho * omega**2 /
-                   torch.clamp(mu_pred[:, 0], min=eps_val))
+
+        if k_pred is not None:
+            # --- k-space residual: derive k^2 directly from k_pred ---
+            # This avoids the k -> mu (clamped) -> k^2 round-trip
+            k_safe = torch.clamp(k_pred[:, 0], min=0.1)  # (B, H, W)
+            k2_data = k_safe ** 2
+        else:
+            # --- legacy: spatial k^2 from mu ---
+            k2_data = (self.rho * omega**2 /
+                       torch.clamp(mu_pred[:, 0], min=eps_val))
 
         # --- homogeneous residual ---
         R_hom = lap_u + k2_data * wave_H
@@ -159,8 +176,16 @@ class ResidualLoss(nn.Module):
         # --- heterogeneous term ---
         if self.heterogeneous:
             dx, dy = self.fov[0]/W_dim, self.fov[1]/H
-            log_mu = torch.log(torch.clamp(mu_pred[:,0], min=eps_val))
-            gx_mu, gy_mu = gradient_2d_batch(log_mu, dy, dx)
+            if k_pred is not None:
+                # log(mu) = log(rho*omega^2) - 2*log(k)
+                # Gradient of log(mu) = -2 * gradient(log(k))
+                log_k = torch.log(k_safe)
+                gx_logk, gy_logk = gradient_2d_batch(log_k, dy, dx)
+                gx_mu = -2.0 * gx_logk
+                gy_mu = -2.0 * gy_logk
+            else:
+                log_mu = torch.log(torch.clamp(mu_pred[:,0], min=eps_val))
+                gx_mu, gy_mu = gradient_2d_batch(log_mu, dy, dx)
             gx_u, gy_u   = gradient_2d_batch(wave_H, dy, dx)
             T_het = gx_mu * gx_u + gy_mu * gy_u
             R_out = R_hom + T_het
@@ -274,40 +299,40 @@ class CombinedResidualLoss(nn.Module):
         Args:
             k_pred: (B, 1, H, W) predicted wave number [rad/m]
             k_gt: (B, 1, H, W) ground truth wave number [rad/m]
-            mu_pred: (B, 1, H, W) predicted stiffness [kPa]
+            mu_pred: (B, 1, H, W) predicted stiffness [Pa]
             mu_gt: (B, 1, H, W) ground truth stiffness [Pa]
             wave: (B, C, H, W, T) complex wave field
             mfre: (B,) frequency [Hz]
             fov: field of view (optional)
-        
+
         Returns:
             total_loss: weighted combination
             data_loss: MSE component
             physics_loss: residual component
         """
         eps_val = 1e-8
-        
+
         # Data loss: MSE in k-space or μ-space
         if self.lambda_data > 0:
             if self.mse_in_k_space:
                 data_loss = F.mse_loss(k_pred, k_gt)
             else:
-                # Compare in μ space (convert mu_gt from Pa to kPa)
+                # Compare in μ space
                 data_loss = F.mse_loss(mu_pred, mu_gt)
         else:
             data_loss = torch.tensor(0.0, device=k_pred.device)
-        
+
         # Physics loss: Residual (hom or het)
-        # Convert mu_pred from kPa to Pa for physics
+        # Pass k_pred directly so physics loss can derive k^2 without mu clamp
         mu_pred_pa = mu_pred
-        
+
         if self.diagnostics:
             physics_loss, diag = self.residual_loss(
-                wave, mu_pred_pa, mfre, W=1.0
+                wave, mu_pred_pa, mfre, W=1.0, k_pred=k_pred
             )
         else:
             physics_loss = self.residual_loss(
-                wave, mu_pred_pa, mfre, W=1.0
+                wave, mu_pred_pa, mfre, W=1.0, k_pred=k_pred
             )
         
         # Combined loss

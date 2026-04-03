@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH -J het_oagh_c                            # Job name
-#SBATCH --account=gts-jueda3                     # charge account
-#SBATCH -N1                                      # Number of nodes
-#SBATCH --gres=gpu:h100:1                        # GPU type and count
-#SBATCH --mem-per-gpu=40GB                       # Memory per GPU
-#SBATCH -t0-8:00:00                              # Duration
-#SBATCH -qinferno                                # QOS Name
-#SBATCH -oReport-het_oagh_c-%j.out               # Output file
+#SBATCH -J mse_only                               # Job name
+#SBATCH --account=gts-jueda3                      # charge account
+#SBATCH -N1                                       # Number of nodes
+#SBATCH --gres=gpu:h100:1                         # GPU type and count
+#SBATCH --mem-per-gpu=40GB                        # Memory per GPU
+#SBATCH -t0-8:00:00                               # Duration
+#SBATCH -qinferno                                 # QOS Name
+#SBATCH -oReport-mse_only-%j.out                  # Output file
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=jueda3@gatech.edu
 cd "$SLURM_SUBMIT_DIR"
@@ -22,7 +22,7 @@ echo "=== Pre-flight check ==="
 echo "ROOT_DIR: $ROOT_DIR"
 ls -la "$ROOT_DIR/train_functions.py" 2>&1
 ls -la "$ROOT_DIR/architectures/UpdatedNetwork.py" 2>&1
-echo "=== Config: HETEROGENEOUS + OAGH-C ==="
+echo "=== Config: MSE ONLY (no physics) ==="
 
 TRAIN_SCRIPT="$SLURM_DIR/main_train.py"
 
@@ -41,13 +41,10 @@ CMD="apptainer exec --nv \
 --field-of-view 0.2 \
 --arch-type FDTDNet \
 --arch-subtype None \
---loss-type residual \
+--loss-type mse \
 --lambda-data 1.0 \
---lambda-physics 1.0 \
---mse-in-k-space \
---heterogeneous \
---harmonization oagh_c \
---warmup-epochs 50"
+--lambda-physics 0.0 \
+--mse-in-k-space"
 
 echo "Running command:"
 echo $CMD

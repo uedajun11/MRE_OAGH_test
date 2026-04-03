@@ -378,6 +378,11 @@ class OAGHHarmonizer:
         """
         Harmonize per-task gradients.
 
+        Gradients are normalized to unit norm before harmonization so that
+        directional conflict (not magnitude imbalance) drives tier selection
+        and projection.  The harmonized direction is then rescaled by the
+        geometric mean of the original norms.
+
         Args:
             grads: List of T flattened gradient vectors, each shape (D,)
 
@@ -385,26 +390,49 @@ class OAGHHarmonizer:
             g_harmonized: (D,) combined gradient
             diagnostics: dict with alpha, f_alpha, tier, task_norms
         """
+        # --- Pre-normalize to decouple direction from magnitude ---
+        orig_norms = [torch.norm(g) for g in grads]
+        # Geometric mean preserves scale without letting one task dominate
+        log_norms = [torch.log(n + 1e-12) for n in orig_norms]
+        scale = torch.exp(sum(log_norms) / len(log_norms))
+
+        grads_normed = []
+        for g, n in zip(grads, orig_norms):
+            if n > 1e-12:
+                grads_normed.append(g / n)
+            else:
+                grads_normed.append(g)
+
+        # --- Harmonize on unit-norm gradients ---
         if self.method == 'oagh_c':
-            g, diag = harmonize_oagh_c(grads)
+            g, diag = harmonize_oagh_c(grads_normed)
         elif self.method == 'oagh':
-            g, diag = harmonize_oagh(grads)
+            g, diag = harmonize_oagh(grads_normed)
         elif self.method == 'pcgrad':
-            g = harmonize_pcgrad(grads)
-            alpha, ac, ad = compute_alpha(grads)
+            g = harmonize_pcgrad(grads_normed)
+            alpha, ac, ad = compute_alpha(grads_normed)
             diag = {
                 'alpha': alpha, 'alpha_conflict': ac, 'alpha_drift': ad,
                 'f_alpha': 1.0, 'tier': 'PCGrad (fixed)',
-                'task_norms': [torch.norm(gi).item() for gi in grads],
+                'task_norms': [n.item() for n in orig_norms],
             }
         elif self.method == 'gradnorm':
-            g = harmonize_gradnorm(grads)
-            alpha, ac, ad = compute_alpha(grads)
+            g = harmonize_gradnorm(grads_normed)
+            alpha, ac, ad = compute_alpha(grads_normed)
             diag = {
                 'alpha': alpha, 'alpha_conflict': ac, 'alpha_drift': ad,
                 'f_alpha': 0.0, 'tier': 'GradNorm (fixed)',
-                'task_norms': [torch.norm(gi).item() for gi in grads],
+                'task_norms': [n.item() for n in orig_norms],
             }
+
+        # --- Rescale harmonized gradient ---
+        g = g * scale
+
+        # Record original (pre-normalization) norms for diagnostics
+        if 'task_norms' not in diag:
+            diag['task_norms'] = [n.item() for n in orig_norms]
+        diag['task_norms_raw'] = [n.item() for n in orig_norms]
+        diag['scale'] = scale.item()
 
         self._last_diagnostics = diag
         return g, diag

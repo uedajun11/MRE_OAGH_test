@@ -180,16 +180,19 @@ class RatioLoss(nn.Module):
         self.viz = viz
         self.diagnostics = diagnostics
     
-    def forward(self,wave_tensors, mu_pred, mfre, W=1.0):
+    def forward(self, wave_tensors, mu_pred, mfre, W=1.0, k_pred=None):
         """
         Compute ratio loss.
-        
+
         Args:
             wave_tensors: (B, C, H, W, T) complex wave field
-            mu_pred: (B, 1, H, W) predicted stiffness [Pa]
+            mu_pred: (B, 1, H, W) predicted stiffness [Pa] (used only if k_pred is None)
             mfre: (B,) or scalar, frequency [Hz]
             W: weight map, scalar or (B, H, W) or (H, W)
-        
+            k_pred: (B, 1, H, W) predicted wave number [rad/m] (optional).
+                     When provided, log(mu) for the heterogeneous term is derived
+                     directly from k_pred, bypassing the mu clamp.
+
         Returns:
             loss: scalar tensor
             diagnostics: dict (if return_diagnostics=True)
@@ -242,8 +245,16 @@ class RatioLoss(nn.Module):
         R_hom = lap_u + k2_data.view(B,1,1) * wave_H
 
         # heterogeneous term
-        log_mu = torch.log(torch.clamp(mu_pred[:,0], min=eps_val))
-        gx_mu, gy_mu = gradient_2d_batch(log_mu, dy, dx)
+        if k_pred is not None:
+            # log(mu) = log(rho*omega^2) - 2*log(k)  =>  grad(log_mu) = -2*grad(log_k)
+            k_safe = torch.clamp(k_pred[:, 0], min=0.1)
+            log_k = torch.log(k_safe)
+            gx_logk, gy_logk = gradient_2d_batch(log_k, dy, dx)
+            gx_mu = -2.0 * gx_logk
+            gy_mu = -2.0 * gy_logk
+        else:
+            log_mu = torch.log(torch.clamp(mu_pred[:,0], min=eps_val))
+            gx_mu, gy_mu = gradient_2d_batch(log_mu, dy, dx)
         gx_u, gy_u   = gradient_2d_batch(wave_H, dy, dx)
         T_het = gx_mu * gx_u + gy_mu * gy_u
         
@@ -390,16 +401,16 @@ class CombinedRatioLoss(nn.Module):
             data_loss = torch.tensor(0.0, device=k_pred.device)
         
         # Physics loss: Ratio loss
-        # Convert mu_pred from kPa to Pa for physics
+        # Pass k_pred directly so physics loss can derive log(mu) without mu clamp
         mu_pred_pa = mu_pred
-        
+
         if self.diagnostics:
             physics_loss, diag = self.ratio_loss(
-                wave, mu_pred_pa, mfre, W=1.0
+                wave, mu_pred_pa, mfre, W=1.0, k_pred=k_pred
             )
         else:
             physics_loss = self.ratio_loss(
-                wave, mu_pred_pa, mfre, W=1.0
+                wave, mu_pred_pa, mfre, W=1.0, k_pred=k_pred
             )
         
         # Combined loss
