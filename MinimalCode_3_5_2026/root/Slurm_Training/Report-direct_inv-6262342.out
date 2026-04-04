@@ -1,0 +1,115 @@
+[2026-04-03T16:49:25.051] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:49:25.051] error: NVML: Failed to get Compute running process count(3): Not Supported
+---------------------------------------
+Begin Slurm Prolog: Apr-03-2026 16:49:25
+Job ID:    6262342
+User ID:   jueda3
+Account:   gts-jueda3
+Job name:  direct_inv
+Partition: gpu-h100
+QOS:       inferno
+---------------------------------------
+=== Pre-flight check ===
+ROOT_DIR: /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root
+DATA_DIR: /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data
+-rw-r--r--. 1 jueda3 pace-jueda3 18058 Mar 30 18:57 /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/losses/homogeneous.py
+=== Config: DIRECT INVERSION (non-ML baseline) ===
+Running command:
+apptainer exec --nv --env PYTHONPATH=/storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root --bind /storage /usr/local/pace-apps/manual/packages/ngc-images/pytorch-2.1.0.sif python /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/Slurm_Training/run_direct_inversion.py --test-dirs /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Test/pt_files/ /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R0_3125cm/pt_files/ /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R0_625cm/pt_files/ /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R1_25cm/pt_files/ /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R2_5cm/pt_files/ --output-dir /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Model_Logs/DirectInversion_20260403_164926 --fov 0.2 --offsets 8 --k-filter 1000 --snr-levels 30 25 20 15
+[2026-04-03T16:49:26.435] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:49:26.435] error: NVML: Failed to get Compute running process count(3): Not Supported
+/storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/Slurm_Training/run_direct_inversion.py:178: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  mu_gt_t = torch.tensor(mu_gt_np).float()
+[2026-04-03T16:49:54.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:49:54.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:49:54.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:49:54.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:49:56.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:49:56.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:49:56.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:49:56.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:24.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:24.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:24.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:24.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:26.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:26.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:26.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:26.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:54.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:54.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:54.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:54.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:56.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:56.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:56.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:50:56.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:51:24.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:51:24.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:51:24.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:51:24.924] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:51:26.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:51:26.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:51:26.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:51:26.232] error: NVML: Failed to get Compute running process count(3): Not Supported
+
+============================================================
+Dataset: pt_files  (/storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Test/pt_files/)
+============================================================
+  Found 1000 .pt files
+  SNR=30dB  |  mae_k=   28.9221  mae_mu= 1948.6480  time=27.2s
+  SNR=25dB  |  mae_k=   34.4064  mae_mu= 2206.3956  time=18.2s
+  SNR=20dB  |  mae_k=   43.1814  mae_mu= 2561.1493  time=18.6s
+  SNR=15dB  |  mae_k=   56.2179  mae_mu= 2912.5011  time=19.0s
+
+============================================================
+Dataset: pt_files  (/storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R0_3125cm/pt_files/)
+============================================================
+  Found 100 .pt files
+  SNR=30dB  |  mae_k=   15.2454  mae_mu= 1354.6087  time=3.0s
+  SNR=25dB  |  mae_k=   16.3862  mae_mu= 1104.1636  time=1.9s
+  SNR=20dB  |  mae_k=   18.7094  mae_mu=  863.8827  time=1.9s
+  SNR=15dB  |  mae_k=   22.9353  mae_mu=  744.6088  time=2.0s
+
+============================================================
+Dataset: pt_files  (/storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R0_625cm/pt_files/)
+============================================================
+  Found 100 .pt files
+  SNR=30dB  |  mae_k=   18.6649  mae_mu=  544.1235  time=2.6s
+  SNR=25dB  |  mae_k=   19.5296  mae_mu=  513.2548  time=1.9s
+  SNR=20dB  |  mae_k=   21.6259  mae_mu=  502.4690  time=1.9s
+  SNR=15dB  |  mae_k=   25.8842  mae_mu=  537.1371  time=1.9s
+
+============================================================
+Dataset: pt_files  (/storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R1_25cm/pt_files/)
+============================================================
+  Found 100 .pt files
+  SNR=30dB  |  mae_k=   20.0667  mae_mu=  526.0591  time=2.6s
+  SNR=25dB  |  mae_k=   20.9658  mae_mu=  501.3951  time=1.9s
+  SNR=20dB  |  mae_k=   23.2246  mae_mu=  511.9209  time=1.9s
+  SNR=15dB  |  mae_k=   27.7140  mae_mu=  585.1007  time=1.9s
+
+============================================================
+Dataset: pt_files  (/storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R2_5cm/pt_files/)
+============================================================
+  Found 100 .pt files
+  SNR=30dB  |  mae_k=   19.0691  mae_mu=  688.5032  time=2.6s
+  SNR=25dB  |  mae_k=   20.1926  mae_mu=  648.3742  time=1.9s
+  SNR=20dB  |  mae_k=   22.8284  mae_mu=  660.7985  time=1.9s
+  SNR=15dB  |  mae_k=   27.8887  mae_mu=  750.8166  time=1.9s
+
+Results saved to: /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Model_Logs/DirectInversion_20260403_164926/direct_inversion_metrics.csv
+[2026-04-03T16:51:40.468] error: NVML: Failed to get Compute running process count(3): Not Supported
+[2026-04-03T16:51:40.473] error: NVML: Failed to get Compute running process count(3): Not Supported
+---------------------------------------
+Begin Slurm Epilog: Apr-03-2026 16:51:40
+Job ID:        6262342
+User ID:       jueda3
+Account:       gts-jueda3
+Job name:      direct_inv
+Resources:     cpu=8,gres/gpu:h100=1,mem=40G,node=1
+Rsrc Used:     cput=00:18:08,vmem=0,walltime=00:02:16,mem=10236K,energy_used=0
+Partition:     gpu-h100
+QOS:           inferno
+Nodes:         atl1-1-01-006-24-0
+---------------------------------------
