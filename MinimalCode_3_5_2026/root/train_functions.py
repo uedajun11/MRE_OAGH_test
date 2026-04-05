@@ -304,7 +304,7 @@ def val_net(net, device, val_loader, loss_f, batch_size, use_physics=False):
             inputs = inputs.permute(1,2,0,3,4) # If not jiaying architecture
             #with torch.cuda.amp.autocast():  # Mixed precision training
             k_pred = net(inputs)
-            mu_pred = wave_number_to_shear_stiffness(k_pred, mfre, fov)
+            mu_pred = wave_number_to_shear_stiffness(k_pred, mfre, fov, clamp_mu=(100, 100000))
 
             if use_physics:
                 # For physics-informed loss, pass outputs, ground truth, and mfre
@@ -627,10 +627,8 @@ def setup_and_run_train(
             writer.add_scalar('OAGH/alpha_conflict', oagh_diag['alpha_conflict'], epoch)
             writer.add_scalar('OAGH/alpha_drift', oagh_diag['alpha_drift'], epoch)
         
-        # Save model
-        if val_total < best_loss:
-            best_loss = val_total
-            # Store entire checkpoint dictionary - checkpoint = torch.load(dir_model, map_location=device)
+        # Save model checkpoint
+        def _save_checkpoint(tag=""):
             torch.save({
                     'epoch': epoch + 1,
                     'state_dict': net.state_dict(),
@@ -652,6 +650,21 @@ def setup_and_run_train(
                     'fov': fov,
                     'run_id': run_id
                 }, os.path.join(dir_model, "weights.pth"))
+
+        # Best-validation save (only when val_loader produces real losses)
+        if val_total > 0 and val_total < best_loss:
+            best_loss = val_total
+            _save_checkpoint()
+
+        # Always save on the last epoch as fallback — ensures the trained model
+        # is never lost when the validation loader is empty (val_total=0 every
+        # epoch, so best-val logic never triggers after epoch 0).
+        if epoch == epochs - 1:
+            _save_checkpoint()
+            if best_loss == float('inf'):
+                print("WARNING: Validation loss was never positive. "
+                      "Saved last-epoch model as fallback.")
+
     time_all = time.time() - time_start
     final_metrics = {"val_loss": best_loss,
                     "total_time": time_all}
@@ -769,7 +782,7 @@ def _soft_clamp(x, lo, hi, sharpness=10.0):
     return x
 
 
-def wave_number_to_shear_stiffness(k_pred, mfre, fov, rho=1000.0, eps=1e-6, clamp_mu=None):
+def wave_number_to_shear_stiffness(k_pred, mfre, fov, rho=1000.0, eps=1e-6, clamp_mu=(100, 100000)):
     """
     Convert predicted wave number to shear stiffness (mu)
 
@@ -779,10 +792,12 @@ def wave_number_to_shear_stiffness(k_pred, mfre, fov, rho=1000.0, eps=1e-6, clam
         fov (Tensor):    [B] field of view scalar
         eps (float):     numerical stability constant
         clamp_mu (tuple or None): (min, max) for soft clamping mu.
-            None  → no upper clamp, only a soft lower bound at 1 Pa
-                    (use for evaluation so metrics reflect true predictions).
-            tuple → soft clamp to [min, max], e.g. (100, 15000) for training
-                    stability during early epochs.
+            (100, 100000) → default, wide eval clamp (0.1-100 kPa). Prevents
+                    outlier pixels (k≈0) from blowing up mae_mu to billions
+                    while still reflecting model differences.
+            (100, 15000)  → narrow training clamp for gradient stability.
+            None          → no upper clamp, only soft lower bound at 1 Pa.
+                    WARNING: pixels with k≈0 will produce μ in the billions.
 
     Returns:
         mu (Tensor): [B, 1, H, W] shear stiffness map
@@ -804,12 +819,16 @@ def wave_number_to_shear_stiffness(k_pred, mfre, fov, rho=1000.0, eps=1e-6, clam
     mu_pa = rho * omega**2 / k_safe**2
 
     if clamp_mu is not None:
-        # Soft clamp mu to specified range (use during training for stability)
+        # Soft clamp mu to specified range.
+        # Training: (100, 15000) for gradient stability.
+        # Evaluation: (100, 100000) — wide enough to reflect model differences
+        #   but finite to prevent outlier pixels (k≈0) from blowing up to billions.
+        #   Brain tissue is typically 1-10 kPa; 100 kPa is 10× the max physical value.
         mu_pa = _soft_clamp(mu_pa, clamp_mu[0], clamp_mu[1], sharpness=0.01)
     else:
-        # Evaluation mode: only enforce a soft lower bound (mu >= 1 Pa)
-        # to avoid negative/zero values, but no upper bound so metrics
-        # reflect true model predictions
+        # No clamp at all — only a soft lower bound (mu >= 1 Pa).
+        # WARNING: a few pixels with k≈0 will produce mu in the billions,
+        # dominating MAE. Use clamp_mu=(100, 100000) for evaluation instead.
         mu_pa = _softplus_lower(mu_pa, 1.0, sharpness=10.0)
     return mu_pa
 
