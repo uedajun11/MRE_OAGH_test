@@ -6,10 +6,21 @@ Runs classical Helmholtz direct inversion on test datasets and saves
 metrics in the same CSV format as the ML model evaluator, so results
 can be compared side-by-side with trained models.
 
+Supports parameter sweeps over k_filter (Butterworth cutoff) and
+medfilt_kernel (post-inversion median filter size) to find the optimal
+DI configuration at each SNR level.
+
 Usage:
     python run_direct_inversion.py \
         --test-dirs /path/to/Test1 /path/to/Test2 ... \
         --output-dir /path/to/results/
+
+    # Parameter sweep:
+    python run_direct_inversion.py \
+        --test-dirs /path/to/Test1 ... \
+        --output-dir /path/to/results/ \
+        --k-filter-sweep 300 500 700 1000 \
+        --medfilt-sweep 3 5 7
 """
 
 import argparse
@@ -21,6 +32,7 @@ import glob
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from scipy.signal import medfilt2d
 
 # ---- Resolve project root so imports work from anywhere ----
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -128,19 +140,63 @@ def get_masks(gt, threshold=None):
     return inc_mask.squeeze(), bg_mask.squeeze()
 
 # ------------------------------------------------------------------ #
-#  Direct inversion runner
+#  Data loading helper (shared across sweep configs)
+# ------------------------------------------------------------------ #
+def _load_datasets(test_dirs, offsets, fov):
+    """
+    Pre-load all datasets once so they can be reused across parameter
+    sweep iterations without re-reading from disk.
+    Returns list of (dataset_name, loader) tuples.
+    """
+    loaded = []
+    for test_dir in test_dirs:
+        dataset_name = os.path.basename(test_dir.rstrip('/'))
+        pt_files = [f for f in os.listdir(test_dir) if f.endswith('.pt')]
+        mat_files = [f for f in os.listdir(test_dir) if f.endswith('.mat')]
+
+        if pt_files:
+            print(f"  [{dataset_name}] Found {len(pt_files)} .pt files")
+            dataset = PDataset(
+                dir_input=test_dir, offsets=offsets,
+                fov=fov, extension='.pt'
+            )
+        elif mat_files:
+            mat_ids = sorted([os.path.splitext(f)[0] for f in mat_files])
+            print(f"  [{dataset_name}] Found {len(mat_ids)} .mat files")
+            dataset = WDataset(
+                ids=mat_ids, dir_input=test_dir + '/',
+                offsets=offsets, fov=fov, extension='.mat'
+            )
+        else:
+            print(f"  WARNING: No .pt or .mat files in {test_dir}, skipping.")
+            continue
+        loader = DataLoader(dataset, batch_size=16, shuffle=False, num_workers=0)
+        loaded.append((dataset_name, loader))
+    return loaded
+
+
+# ------------------------------------------------------------------ #
+#  Direct inversion runner (single configuration)
 # ------------------------------------------------------------------ #
 def evaluate_direct_inversion(test_dirs, output_dir, fov=0.2, offsets=8,
-                               k_filter=1000, rho=1000, snr_levels=None):
+                               k_filter=1000, medfilt_kernel=3, rho=1000,
+                               snr_levels=None, _preloaded=None):
     """
     Run direct inversion on each test directory and save aggregate metrics.
+
+    Args:
+        k_filter: Butterworth lowpass cutoff (cycles/m). None = no filtering.
+        medfilt_kernel: median filter kernel size applied to mu map (odd int).
+                        0 or None = skip median filter.
+        _preloaded: pre-loaded (dataset_name, loader) list to avoid re-reading
+                    data from disk on every sweep iteration.
     """
     if snr_levels is None:
         snr_levels = [30, 25, 20, 15]
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # Helmholtz inverter
+    # Helmholtz inverter — apply_medfilt=False so we control it externally
     hom = MREHelmholtzLoss(
         density=rho,
         fov=(fov, fov),
@@ -151,40 +207,20 @@ def evaluate_direct_inversion(test_dirs, output_dir, fov=0.2, offsets=8,
     )
 
     rows = []
-    model_label = "DirectInversion"
+    kf_str = f"{int(k_filter)}" if k_filter else "None"
+    mf_str = f"{medfilt_kernel}" if medfilt_kernel else "0"
+    model_label = f"DI_kf{kf_str}_mf{mf_str}"
 
-    for test_dir in test_dirs:
-        dataset_name = os.path.basename(test_dir.rstrip('/'))
+    # Load data (or reuse preloaded)
+    if _preloaded is not None:
+        datasets_loaded = _preloaded
+    else:
+        datasets_loaded = _load_datasets(test_dirs, offsets, fov)
+
+    for dataset_name, loader in datasets_loaded:
         print(f"\n{'='*60}")
-        print(f"Dataset: {dataset_name}  ({test_dir})")
+        print(f"Config: k_filter={kf_str}, medfilt={mf_str}  |  Dataset: {dataset_name}")
         print(f"{'='*60}")
-
-        # Detect file format (.pt or .mat)
-        pt_files = [f for f in os.listdir(test_dir) if f.endswith('.pt')]
-        mat_files = [f for f in os.listdir(test_dir) if f.endswith('.mat')]
-
-        if pt_files:
-            print(f"  Found {len(pt_files)} .pt files")
-            dataset = PDataset(
-                dir_input=test_dir,
-                offsets=offsets,
-                fov=fov,
-                extension='.pt'
-            )
-        elif mat_files:
-            mat_ids = sorted([os.path.splitext(f)[0] for f in mat_files])
-            print(f"  Found {len(mat_ids)} .mat files")
-            dataset = WDataset(
-                ids=mat_ids,
-                dir_input=test_dir + '/',
-                offsets=offsets,
-                fov=fov,
-                extension='.mat'
-            )
-        else:
-            print(f"  WARNING: No .pt or .mat files in {test_dir}, skipping.")
-            continue
-        loader = DataLoader(dataset, batch_size=16, shuffle=False, num_workers=0)
 
         for snr_db in snr_levels:
             metrics = {
@@ -205,42 +241,38 @@ def evaluate_direct_inversion(test_dirs, output_dir, fov=0.2, offsets=8,
                 else:
                     wave_noisy = wave_input
 
-                # directInverse → extract_fundamental_frequency_batch expects (B, C, H, W, T)
-                # PDataset returns (1, H, W, T) per sample → batched (B, 1, H, W, T) — already correct
-                # WDataset returns (1, T, H, W) per sample → batched (B, 1, T, H, W) — needs permute
+                # Shape handling:
+                # PDataset: (B, 1, H, W, T) — last dim is T, already correct
+                # WDataset: (B, 1, T, H, W) — needs permute to (B, 1, H, W, T)
                 wave_5d = wave_noisy
                 if wave_5d.shape[-1] != offsets:
-                    # WDataset layout (B, 1, T, H, W) → permute to (B, 1, H, W, T)
                     wave_for_di = wave_5d.permute(0, 1, 3, 4, 2)
                 else:
-                    # PDataset layout (B, 1, H, W, T) — already correct
                     wave_for_di = wave_5d
 
-                # Run direct inversion → returns (sm_pa, k_di)
+                # Run direct inversion WITHOUT internal median filter
                 with torch.no_grad():
-                    sm_pa, k_di = hom.directInverse(wave_for_di, mfre, apply_medfilt=True)
-                    # sm_pa shape: (B, H, W) in Pa (directInverse no longer divides by 1000)
-                    # k_di shape:  (B, 1, H, W) complex wave number
+                    sm_pa, k_di = hom.directInverse(wave_for_di, mfre, apply_medfilt=False)
+                    # sm_pa: (B, H, W) in Pa
+                    # k_di:  (B, 1, H, W) wave number
 
-                # directInverse now returns Pa (the /1000 was removed).
-                # mu_gt from PDataset is also in Pa, so no conversion needed.
+                # Apply external median filter with configurable kernel size
+                if medfilt_kernel and medfilt_kernel > 1:
+                    sm_np = sm_pa.cpu().numpy()
+                    for b in range(B):
+                        sm_np[b] = medfilt2d(sm_np[b], kernel_size=medfilt_kernel)
+                    sm_pa = torch.tensor(sm_np, device=sm_pa.device)
+
                 mu_pred_pa = sm_pa.float()
 
-                # Convert mu_gt from numpy to tensor
+                # Ground truth mu
                 mu_gt_t = torch.tensor(mu_gt_np).float()
-                if mu_gt_t.dim() == 3:
-                    mu_gt_t = mu_gt_t  # (B, H, W)
-                elif mu_gt_t.dim() == 4:
+                if mu_gt_t.dim() == 4:
                     mu_gt_t = mu_gt_t.squeeze(1)
 
-                # Use k directly from directInverse (physical wave number in rad/m).
-                # k_di shape: (B, 1, H, W) — squeeze channel dim to (B, H, W).
-                # k_gt from PDataset is also in rad/m: k = omega * sqrt(rho/mu).
-                # NOTE: Previous version incorrectly used WDataset convention
-                # (k = fov * omega / sqrt(mu_kPa)) which is off by a factor of fov.
-                k_pred = torch.abs(k_di.squeeze(1).float())  # abs since sqrt of complex can produce negative real parts
-
-                k_gt_sq = k_gt.squeeze(1)  # (B, H, W)
+                # k prediction (physical rad/m, from directInverse)
+                k_pred = torch.abs(k_di.squeeze(1).float())
+                k_gt_sq = k_gt.squeeze(1)
 
                 for b in range(B):
                     metrics['mae_k'].append(compute_mae(k_pred[b], k_gt_sq[b]))
@@ -250,16 +282,16 @@ def evaluate_direct_inversion(test_dirs, output_dir, fov=0.2, offsets=8,
                     metrics['rmse_mu'].append(compute_rmse(mu_pred_pa[b], mu_gt_t[b]))
                     metrics['ssim_mu'].append(compute_ssim(mu_pred_pa[b], mu_gt_t[b]))
 
-                    # CNR only for inclusion datasets
                     if 'Inclusion' in dataset_name or 'inclusion' in dataset_name:
                         inc_mask, bg_mask = get_masks(mu_gt_t[b])
                         metrics['cnr'].append(compute_cnr(mu_pred_pa[b], inc_mask, bg_mask))
 
             elapsed = time.time() - t0
 
-            # Aggregate
             row = {
                 'model': model_label,
+                'k_filter': kf_str,
+                'medfilt_kernel': mf_str,
                 'snr_db': snr_db,
                 'dataset': dataset_name,
                 'mae_k': np.mean(metrics['mae_k']) if metrics['mae_k'] else '',
@@ -277,15 +309,81 @@ def evaluate_direct_inversion(test_dirs, output_dir, fov=0.2, offsets=8,
                   f"mae_mu={row['mae_mu']:>10.4f}  "
                   f"time={elapsed:.1f}s")
 
-    # Save CSV
-    csv_path = os.path.join(output_dir, 'direct_inversion_metrics.csv')
-    fieldnames = ['model', 'snr_db', 'dataset', 'mae_k', 'rmse_k', 'ssim_k',
-                  'mae_mu', 'rmse_mu', 'ssim_mu', 'cnr', 'time_s']
+    return rows
+
+
+# ------------------------------------------------------------------ #
+#  Parameter sweep runner
+# ------------------------------------------------------------------ #
+def run_sweep(test_dirs, output_dir, fov=0.2, offsets=8, rho=1000,
+              snr_levels=None, k_filter_values=None, medfilt_values=None):
+    """
+    Sweep over k_filter × medfilt_kernel combinations and save all
+    results into a single CSV for easy comparison.
+    """
+    if k_filter_values is None:
+        k_filter_values = [1000]
+    if medfilt_values is None:
+        medfilt_values = [3]
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Pre-load data ONCE
+    print("Loading datasets...")
+    preloaded = _load_datasets(test_dirs, offsets, fov)
+    print(f"Loaded {len(preloaded)} datasets.\n")
+
+    all_rows = []
+    n_configs = len(k_filter_values) * len(medfilt_values)
+    config_idx = 0
+
+    for kf in k_filter_values:
+        for mf in medfilt_values:
+            config_idx += 1
+            print(f"\n{'#'*60}")
+            print(f"  CONFIG {config_idx}/{n_configs}: k_filter={kf}, medfilt={mf}")
+            print(f"{'#'*60}")
+
+            rows = evaluate_direct_inversion(
+                test_dirs=test_dirs,
+                output_dir=output_dir,
+                fov=fov, offsets=offsets,
+                k_filter=kf, medfilt_kernel=mf,
+                rho=rho, snr_levels=snr_levels,
+                _preloaded=preloaded
+            )
+            all_rows.extend(rows)
+
+    # Save combined CSV
+    csv_path = os.path.join(output_dir, 'direct_inversion_sweep.csv')
+    fieldnames = ['model', 'k_filter', 'medfilt_kernel', 'snr_db', 'dataset',
+                  'mae_k', 'rmse_k', 'ssim_k', 'mae_mu', 'rmse_mu', 'ssim_mu',
+                  'cnr', 'time_s']
     with open(csv_path, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
-    print(f"\nResults saved to: {csv_path}")
+        writer.writerows(all_rows)
+    print(f"\n{'='*60}")
+    print(f"Sweep complete! {len(all_rows)} rows saved to: {csv_path}")
+    print(f"{'='*60}")
+
+    # ---- Print quick summary: best config per dataset+SNR ----
+    print(f"\n{'='*60}")
+    print("BEST CONFIG PER DATASET + SNR (by mae_mu)")
+    print(f"{'='*60}")
+    # Group by dataset+snr, find min mae_mu
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for r in all_rows:
+        key = (r['dataset'], r['snr_db'])
+        if r['mae_mu'] != '':
+            groups[key].append(r)
+    for (ds, snr), rows_g in sorted(groups.items()):
+        best = min(rows_g, key=lambda x: float(x['mae_mu']))
+        print(f"  {ds:<22} SNR={snr:2d}  →  {best['model']:<25}  "
+              f"mae_mu={float(best['mae_mu']):>8.1f}  "
+              f"ssim_mu={float(best['ssim_mu']):>6.4f}")
+
     return csv_path
 
 
@@ -293,26 +391,66 @@ def evaluate_direct_inversion(test_dirs, output_dir, fov=0.2, offsets=8,
 #  CLI
 # ------------------------------------------------------------------ #
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Direct Inversion baseline for MRE benchmark')
+    parser = argparse.ArgumentParser(
+        description='Direct Inversion baseline for MRE benchmark (with parameter sweep)')
     parser.add_argument('--test-dirs', nargs='+', required=True,
-                        help='Paths to test dataset directories containing .mat files')
+                        help='Paths to test dataset directories')
     parser.add_argument('--output-dir', type=str, required=True,
                         help='Directory to save evaluation results')
     parser.add_argument('--fov', type=float, default=0.2,
                         help='Field of view in meters (default: 0.2)')
     parser.add_argument('--offsets', type=int, default=8,
                         help='Number of time offsets (default: 8)')
-    parser.add_argument('--k-filter', type=float, default=1000,
-                        help='Butterworth filter cutoff (default: 1000)')
-    parser.add_argument('--snr-levels', nargs='+', type=int, default=[30, 25, 20, 15],
+    parser.add_argument('--snr-levels', nargs='+', type=int,
+                        default=[30, 25, 20, 15],
                         help='SNR levels to evaluate (default: 30 25 20 15)')
 
+    # Single-config mode (backward compatible)
+    parser.add_argument('--k-filter', type=float, default=None,
+                        help='Single Butterworth cutoff (use --k-filter-sweep for sweep)')
+    parser.add_argument('--medfilt-kernel', type=int, default=None,
+                        help='Single median filter kernel (use --medfilt-sweep for sweep)')
+
+    # Sweep mode
+    parser.add_argument('--k-filter-sweep', nargs='+', type=float, default=None,
+                        help='Butterworth cutoffs to sweep (e.g. 300 500 700 1000)')
+    parser.add_argument('--medfilt-sweep', nargs='+', type=int, default=None,
+                        help='Median filter kernels to sweep (e.g. 3 5 7)')
+
     args = parser.parse_args()
-    evaluate_direct_inversion(
-        test_dirs=args.test_dirs,
-        output_dir=args.output_dir,
-        fov=args.fov,
-        offsets=args.offsets,
-        k_filter=args.k_filter,
-        snr_levels=args.snr_levels
-    )
+
+    # Determine mode
+    sweep_mode = (args.k_filter_sweep is not None) or (args.medfilt_sweep is not None)
+
+    if sweep_mode:
+        kf_vals = args.k_filter_sweep or [1000]
+        mf_vals = args.medfilt_sweep or [3]
+        run_sweep(
+            test_dirs=args.test_dirs,
+            output_dir=args.output_dir,
+            fov=args.fov, offsets=args.offsets,
+            snr_levels=args.snr_levels,
+            k_filter_values=kf_vals,
+            medfilt_values=mf_vals
+        )
+    else:
+        # Single config (backward compatible)
+        kf = args.k_filter if args.k_filter is not None else 1000
+        mf = args.medfilt_kernel if args.medfilt_kernel is not None else 3
+        rows = evaluate_direct_inversion(
+            test_dirs=args.test_dirs,
+            output_dir=args.output_dir,
+            fov=args.fov, offsets=args.offsets,
+            k_filter=kf, medfilt_kernel=mf,
+            snr_levels=args.snr_levels
+        )
+        # Save CSV
+        csv_path = os.path.join(args.output_dir, 'direct_inversion_metrics.csv')
+        fieldnames = ['model', 'k_filter', 'medfilt_kernel', 'snr_db', 'dataset',
+                      'mae_k', 'rmse_k', 'ssim_k', 'mae_mu', 'rmse_mu', 'ssim_mu',
+                      'cnr', 'time_s']
+        with open(csv_path, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"\nResults saved to: {csv_path}")
