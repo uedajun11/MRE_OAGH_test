@@ -35,46 +35,87 @@ from losses.homogeneous import MREHelmholtzLoss
 # ------------------------------------------------------------------ #
 #  Metric helpers (same as ModelEvaluator)
 # ------------------------------------------------------------------ #
+
 def compute_mae(pred, gt):
-    return torch.mean(torch.abs(pred.float() - gt.float())).item()
+    """
+    Mean Absolute Error
+    """
+    return torch.mean(torch.abs(pred - gt)).item()
+
 
 def compute_rmse(pred, gt):
-    return torch.sqrt(torch.mean((pred.float() - gt.float()) ** 2)).item()
+    """
+    Root Mean Squared Error
+    """
+    return torch.sqrt(torch.mean((pred - gt) ** 2)).item()
 
-def compute_ssim(pred, gt):
-    """Simplified structural similarity."""
-    from torch.nn.functional import avg_pool2d
-    p = pred.float().unsqueeze(0).unsqueeze(0) if pred.dim() == 2 else pred.float().unsqueeze(0)
-    g = gt.float().unsqueeze(0).unsqueeze(0) if gt.dim() == 2 else gt.float().unsqueeze(0)
-    C1, C2 = 0.01 ** 2, 0.03 ** 2
-    mu_p = avg_pool2d(p, 11, stride=1, padding=5)
-    mu_g = avg_pool2d(g, 11, stride=1, padding=5)
-    sig_p = avg_pool2d(p ** 2, 11, stride=1, padding=5) - mu_p ** 2
-    sig_g = avg_pool2d(g ** 2, 11, stride=1, padding=5) - mu_g ** 2
-    sig_pg = avg_pool2d(p * g, 11, stride=1, padding=5) - mu_p * mu_g
-    ssim_map = ((2 * mu_p * mu_g + C1) * (2 * sig_pg + C2)) / \
-               ((mu_p ** 2 + mu_g ** 2 + C1) * (sig_p + sig_g + C2))
-    return ssim_map.mean().item()
 
-def get_masks(mu_map):
-    """Binary masks for inclusion vs background based on mu value."""
-    mu = mu_map.squeeze()
-    bg_val = mu[0, 0].item()
-    inc_mask = (mu != bg_val)
-    bg_mask = (mu == bg_val)
-    return inc_mask, bg_mask
+# +
+def compute_ssim(pred, gt, data_range=None, crop_phantom=False):
+    pred_np = pred.squeeze().cpu().numpy()
+    gt_np   = gt.squeeze().cpu().numpy()
 
-def compute_cnr(pred_map, inc_mask, bg_mask):
-    pred = pred_map.squeeze().float()
-    if inc_mask.sum() == 0 or bg_mask.sum() == 0:
-        return 0.0
+    def safe_data_range(g):
+        dr = g.max() - g.min()
+        return dr if dr > 0 else 1.0
+
+    def crop(arr):
+        if arr.ndim == 2:
+            return arr[51:205, 5:251]
+        return arr
+
+    if crop_phantom:
+        pred_np = crop(pred_np)
+        gt_np   = crop(gt_np)
+
+    if pred_np.ndim == 2:
+        return ssim_np(gt_np, pred_np,
+                       data_range=data_range or safe_data_range(gt_np))
+    else:
+        ssim_vals = []
+        for p, g in zip(pred_np, gt_np):
+            ssim_vals.append(ssim_np(g, p,
+                             data_range=data_range or safe_data_range(g)))
+        return float(np.mean(ssim_vals))[1:26 PM]# -------------------------------
+# Contrast-to-Noise Ratio (CNR)
+# -------------------------------
+
+def compute_cnr(pred, inc_mask, bg_mask, epsilon=1e-6):
+    """
+    Compute contrast-to-noise ratio:
+        CNR = |mean_inclusion - mean_background| / sqrt(var_inclusion + var_background)
+    pred: [H,W] torch tensor
+    inc_mask, bg_mask: boolean masks
+    """
+    pred = pred.float()
+
     mu_inc = pred[inc_mask].mean()
-    mu_bg = pred[bg_mask].mean()
-    std_inc = pred[inc_mask].std()
-    std_bg = pred[bg_mask].std()
-    denom = torch.sqrt(std_inc ** 2 + std_bg ** 2 + 1e-8)
-    return (torch.abs(mu_inc - mu_bg) / denom).item()
+    mu_bg  = pred[bg_mask].mean()
 
+    var_inc = pred[inc_mask].var(unbiased=False)
+    var_bg  = pred[bg_mask].var(unbiased=False)
+
+    cnr_val = torch.abs(mu_inc - mu_bg) / torch.sqrt(var_inc + var_bg + epsilon)
+    return cnr_val.item()
+
+
+# -------------------------------
+# Helper: get inclusion/background masks
+# -------------------------------
+
+def get_masks(gt, threshold=None):
+    """
+    Create binary masks for inclusion and background.
+    Example: simple thresholding on gt for demonstration.
+    You can replace this with your real inclusion segmentation logic.
+    """
+    if threshold is None:
+        threshold = gt.mean()  # simple heuristic
+
+    inc_mask = gt > threshold
+    bg_mask  = gt <= threshold
+
+    return inc_mask.squeeze(), bg_mask.squeeze()
 
 # ------------------------------------------------------------------ #
 #  Direct inversion runner
