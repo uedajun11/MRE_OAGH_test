@@ -251,7 +251,7 @@ class MREHelmholtzLoss(nn.Module):
       
         omega = (2 * np.pi * frequencies).view(B, 1, 1, 1)
 
-        sm = self.density * (omega / k)**2 / 1000.0 # kPa units
+        sm = self.density * (omega / k)**2# / 1000.0 # kPa units
 
         # Optional median filter
         if apply_medfilt:
