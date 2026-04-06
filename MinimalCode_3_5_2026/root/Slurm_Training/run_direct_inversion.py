@@ -31,6 +31,12 @@ if ROOT_DIR not in sys.path:
 from Data_loader import WDataset, PDataset
 from losses.homogeneous import MREHelmholtzLoss
 
+try:
+    from skimage.metrics import structural_similarity as ssim_np
+except ImportError:
+    ssim_np = None
+    print("WARNING: skimage not available — SSIM will be reported as NaN")
+
 
 # ------------------------------------------------------------------ #
 #  Metric helpers (same as ModelEvaluator)
@@ -67,6 +73,9 @@ def compute_ssim(pred, gt, data_range=None, crop_phantom=False):
     if crop_phantom:
         pred_np = crop(pred_np)
         gt_np   = crop(gt_np)
+
+    if ssim_np is None:
+        return float('nan')
 
     if pred_np.ndim == 2:
         return ssim_np(gt_np, pred_np,
@@ -207,14 +216,15 @@ def evaluate_direct_inversion(test_dirs, output_dir, fov=0.2, offsets=8,
                     # PDataset layout (B, 1, H, W, T) — already correct
                     wave_for_di = wave_5d
 
-                # Run direct inversion → returns (sm_kpa, k_di)
+                # Run direct inversion → returns (sm_pa, k_di)
                 with torch.no_grad():
-                    sm_kpa, k_di = hom.directInverse(wave_for_di, mfre, apply_medfilt=True)
-                    # sm_kpa shape: (B, H, W) in kPa
-                    # k_di shape:   (B, 1, H, W) complex wave number
+                    sm_pa, k_di = hom.directInverse(wave_for_di, mfre, apply_medfilt=True)
+                    # sm_pa shape: (B, H, W) in Pa (directInverse no longer divides by 1000)
+                    # k_di shape:  (B, 1, H, W) complex wave number
 
-                # Convert to Pa for comparison with mu_gt (which is in Pa)
-                mu_pred_pa = sm_kpa.float() * 1000.0  # kPa → Pa
+                # directInverse now returns Pa (the /1000 was removed).
+                # mu_gt from PDataset is also in Pa, so no conversion needed.
+                mu_pred_pa = sm_pa.float()
 
                 # Convert mu_gt from numpy to tensor
                 mu_gt_t = torch.tensor(mu_gt_np).float()
