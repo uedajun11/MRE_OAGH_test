@@ -76,7 +76,8 @@ def compute_ssim(pred, gt, data_range=None, crop_phantom=False):
         for p, g in zip(pred_np, gt_np):
             ssim_vals.append(ssim_np(g, p,
                              data_range=data_range or safe_data_range(g)))
-        return float(np.mean(ssim_vals))[1:26 PM]# -------------------------------
+        return float(np.mean(ssim_vals))
+
 # Contrast-to-Noise Ratio (CNR)
 # -------------------------------
 
