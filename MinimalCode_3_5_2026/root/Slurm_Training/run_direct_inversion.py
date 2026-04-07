@@ -253,8 +253,11 @@ def evaluate_direct_inversion(test_dirs, output_dir, fov=0.2, offsets=8,
                 # Run direct inversion WITHOUT internal median filter
                 with torch.no_grad():
                     sm_pa, k_di = hom.directInverse(wave_for_di, mfre, apply_medfilt=False)
-                    # sm_pa: (B, H, W) in Pa
+                    # sm_pa: (B, 1, H, W) in Pa when apply_medfilt=False
                     # k_di:  (B, 1, H, W) wave number
+
+                # Squeeze channel dim: (B, 1, H, W) → (B, H, W)
+                sm_pa = sm_pa.squeeze(1)
 
                 # Apply external median filter with configurable kernel size
                 if medfilt_kernel and medfilt_kernel > 1:
