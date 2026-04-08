@@ -22,25 +22,55 @@ def compute_rmse(pred, gt):
     return torch.sqrt(torch.mean((pred - gt) ** 2)).item()
 
 
-def compute_ssim(pred, gt, data_range=None):
-    """
-    Structural Similarity Index (SSIM)
-    Uses skimage implementation via numpy
-    Assumes pred and gt are torch tensors of shape [B,1,H,W] or [B,H,W]
-    """
+# +
+def compute_ssim(pred, gt, data_range=None, crop_phantom=False):
     pred_np = pred.squeeze().cpu().numpy()
-    gt_np = gt.squeeze().cpu().numpy()
+    gt_np   = gt.squeeze().cpu().numpy()
 
-    # Handle single-channel 2D images
+    def safe_data_range(g):
+        dr = g.max() - g.min()
+        return dr if dr > 0 else 1.0
+
+    def crop(arr):
+        if arr.ndim == 2:
+            return arr[51:205, 5:251]
+        return arr
+
+    if crop_phantom:
+        pred_np = crop(pred_np)
+        gt_np   = crop(gt_np)
+
     if pred_np.ndim == 2:
-        return ssim_np(gt_np, pred_np, data_range=data_range or (gt_np.max() - gt_np.min()))
+        return ssim_np(gt_np, pred_np,
+                       data_range=data_range or safe_data_range(gt_np))
     else:
-        # Batch of images
         ssim_vals = []
         for p, g in zip(pred_np, gt_np):
-            ssim_vals.append(ssim_np(g, p, data_range=data_range or (g.max() - g.min())))
+            ssim_vals.append(ssim_np(g, p,
+                             data_range=data_range or safe_data_range(g)))
         return float(np.mean(ssim_vals))
 
+# def compute_ssim(pred, gt, data_range=None):
+#     """
+#     Structural Similarity Index (SSIM)
+#     Uses skimage implementation via numpy
+#     Assumes pred and gt are torch tensors of shape [B,1,H,W] or [B,H,W]
+#     """
+#     pred_np = pred.squeeze().cpu().numpy()
+#     gt_np = gt.squeeze().cpu().numpy()
+
+#     # Handle single-channel 2D images
+#     if pred_np.ndim == 2:
+#         return ssim_np(gt_np, pred_np, data_range=data_range or (gt_np.max() - gt_np.min()))
+#     else:
+#         # Batch of images
+#         ssim_vals = []
+#         for p, g in zip(pred_np, gt_np):
+#             ssim_vals.append(ssim_np(g, p, data_range=data_range or (g.max() - g.min())))
+#         return float(np.mean(ssim_vals))
+
+
+# -
 
 # -------------------------------
 # Contrast-to-Noise Ratio (CNR)
