@@ -27,7 +27,7 @@ LR_ARG=“--learning-rate 0.001”
 
 
 
-TRAIN_INPUT_ARG=”--train-input /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Training/pt_files/”
+TRAIN_INPUT_ARG=”--train-input /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Training/”
 VAL_INPUT_ARG=”--validation-input /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Validation/pt_files/”
 MODEL_ARG=“--model /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Model_Logs/”
 
