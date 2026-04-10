@@ -1,8 +1,7 @@
 """
 main_train_R2.py — Revision 2 training wrapper for OAGH improvements.
 
-Three independent modifications, controlled by CLI flags:
-  --snr-adaptive       : Scale lambda_physics by min(1, SNR/25) per epoch
+Two independent modifications, controlled by CLI flags:
   --curriculum         : Train clean→noisy (SNR schedule over epochs)
   --di-k-filter <val>  : Override k_filter in the physics loss (default 1000)
 
@@ -12,6 +11,10 @@ one at a time. When no R2 flags are set, behavior is identical to main_train.py.
 This file does NOT modify any existing code — it wraps setup_and_run_train
 with a thin layer that patches parameters before calling the original function.
 To withdraw: simply delete this file and the R2 sbatch files.
+
+Note: R2 Option 1 (SNR-adaptive) was tested in PACE eval 20260410_111851 and
+withdrawn after paired t-tests showed baseline OAGH won on all 20/20 test
+conditions (p < 1e-7, Cohen's d 0.17–7.11). Code and sbatch removed.
 """
 
 import argparse
@@ -64,13 +67,6 @@ def parse_args():
     parser.add_argument('--warmup-epochs', type=int, default=50)
 
     # --- R2-specific arguments ---
-    parser.add_argument('--snr-adaptive', action='store_true', default=False,
-                        help='R2 Option 1: Scale physics loss weight by min(1, SNR/25). '
-                             'Reduces physics influence at high noise.')
-    parser.add_argument('--snr-adaptive-ref', type=float, default=25.0,
-                        help='Reference SNR for adaptive scaling. Physics weight = min(1, SNR/ref). '
-                             'Default: 25.0')
-
     parser.add_argument('--curriculum', action='store_true', default=False,
                         help='R2 Option 2: Curriculum learning — train clean first, '
                              'then gradually introduce noise.')
@@ -88,86 +84,6 @@ def parse_args():
                              'Default: auto-generated from active R2 options.')
 
     return parser.parse_args()
-
-
-def run_snr_adaptive(args):
-    """
-    Option 1: SNR-adaptive physics loss weighting.
-
-    Mechanism: Instead of fixed lambda_physics=1.0, we scale it by
-    min(1.0, training_snr / snr_ref). At SNR=20 with ref=25, the physics
-    weight becomes 0.8, reducing noisy physics gradient influence.
-
-    Implementation: We modify the data loader's SNR and scale lambda_physics
-    accordingly. Since OAGH ignores fixed lambdas (it does its own weighting),
-    we instead modify the physics loss output by a multiplicative factor.
-    This is done by wrapping the loss function.
-    """
-    from train_functions import setup_and_run_train
-    from Data_loader import get_Pdataloader_for_train, get_Pdataloader_for_val, AddGaussianNoiseSNR, PDataset
-    from losses.residual_losses import CombinedResidualLoss
-    import torch.nn as nn
-
-    snr_ref = args.snr_adaptive_ref
-    training_snr = 20  # Current default
-
-    # Scale factor for physics loss
-    scale = min(1.0, training_snr / snr_ref)
-    print(f"\n{'='*60}")
-    print(f"R2 Option 1: SNR-Adaptive Physics Weighting")
-    print(f"  Training SNR: {training_snr}")
-    print(f"  Reference SNR: {snr_ref}")
-    print(f"  Physics scale factor: {scale:.3f}")
-    print(f"{'='*60}\n")
-
-    # Create a wrapper that scales the physics loss
-    class ScaledPhysicsCombinedLoss(nn.Module):
-        """Wraps CombinedResidualLoss, scaling physics_loss by a factor."""
-        def __init__(self, base_loss, physics_scale):
-            super().__init__()
-            self.base_loss = base_loss
-            self.physics_scale = physics_scale
-
-        def forward(self, k_pred, k_gt, mu_pred, mu_gt, wave, mfre, fov=None):
-            total_loss, data_loss, physics_loss = self.base_loss(
-                k_pred, k_gt, mu_pred, mu_gt, wave, mfre, fov
-            )
-            # Rescale physics component
-            scaled_physics = physics_loss * self.physics_scale
-            # Recompute total: data + scaled_physics
-            new_total = (self.base_loss.lambda_data * data_loss +
-                         self.base_loss.lambda_physics * scaled_physics)
-            return new_total, data_loss, scaled_physics
-
-    # Monkey-patch: import and override the loss construction in train_functions
-    # Instead, we use a cleaner approach: call setup_and_run_train but with
-    # a modified lambda_physics that incorporates the scale
-    effective_lambda_physics = args.lambda_physics * scale
-    print(f"  Effective lambda_physics: {args.lambda_physics} * {scale} = {effective_lambda_physics:.3f}")
-
-    # For OAGH: lambdas are "ignored" during harmonization, but they're used
-    # during warmup AND as initial scale in CombinedResidualLoss.
-    # The cleaner approach: scale lambda_physics directly.
-    setup_and_run_train(
-        train_input=args.train_input,
-        val_input=args.validation_input,
-        dir_model=args.model,
-        offsets=args.offsets,
-        fov=(args.field_of_view, args.field_of_view),
-        batch_size=args.batch_size,
-        epochs=args.epochs,
-        lr=args.learning_rate,
-        arch_type=args.arch_type,
-        arch_subtype=None if args.arch_subtype in [None, "None", "none"] else args.arch_subtype,
-        loss_type=args.loss_type,
-        lambda_data=args.lambda_data,
-        lambda_physics=effective_lambda_physics,
-        heterogeneous=args.heterogeneous,
-        orthogonalize_het=args.orthogonalize_het,
-        mse_in_k_space=args.mse_in_k_space,
-        harmonization=args.harmonization,
-        warmup_epochs=args.warmup_epochs
-    )
 
 
 def run_curriculum(args):
@@ -455,8 +371,6 @@ if __name__ == "__main__":
 
     # Identify which R2 option(s) are active
     active = []
-    if args.snr_adaptive:
-        active.append('adaptive')
     if args.curriculum:
         active.append('curriculum')
     if args.di_k_filter is not None:
@@ -464,7 +378,7 @@ if __name__ == "__main__":
 
     if not active:
         print("WARNING: No R2 options specified. Running identical to main_train.py.")
-        print("  Use --snr-adaptive, --curriculum, or --di-k-filter <val>")
+        print("  Use --curriculum, or --di-k-filter <val>")
 
     print(f"\n{'#'*60}")
     print(f"  OAGH Revision 2 Training")
@@ -475,28 +389,10 @@ if __name__ == "__main__":
     # Only one R2 option at a time for clean comparison
     if args.curriculum:
         # Curriculum has its own training loop (needs epoch-level SNR control)
-        if args.snr_adaptive or args.di_k_filter is not None:
+        if args.di_k_filter is not None:
             print("NOTE: --curriculum uses its own training loop. "
-                  "Other R2 options are ignored in this run.")
+                  "--di-k-filter is ignored in this run.")
         run_curriculum(args)
-    elif args.snr_adaptive and args.di_k_filter is not None:
-        print("WARNING: Both --snr-adaptive and --di-k-filter active. "
-              "Running adaptive with patched k_filter.")
-        # Apply di-filter patch, then run adaptive
-        import losses.residual_losses as rl
-        from losses.homogeneous import MREHelmholtzLoss as _MRE
-        _orig_mre_init = _MRE.__init__
-        kf = args.di_k_filter
-        def _mre_patched(s, density=1000, fov=(0.2,0.2), residual_type='raw',
-                         k_filter=None, epsilon=1e-10, verbose=False):
-            _orig_mre_init(s, density, fov, residual_type, kf, epsilon, verbose)
-        _MRE.__init__ = _mre_patched
-        try:
-            run_snr_adaptive(args)
-        finally:
-            _MRE.__init__ = _orig_mre_init
-    elif args.snr_adaptive:
-        run_snr_adaptive(args)
     elif args.di_k_filter is not None:
         run_difilter(args)
     else:
