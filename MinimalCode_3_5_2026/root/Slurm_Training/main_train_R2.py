@@ -130,7 +130,7 @@ def run_curriculum(args):
     )
     from Data_loader import get_Pdataloader_for_train, get_Pdataloader_for_val
     from losses.residual_losses import CombinedResidualLoss
-    from harmonizer import OAGHHarmonizer
+    from losses.oagh_harmonizer import OAGHHarmonizer
     from torch.utils.tensorboard import SummaryWriter
     from datetime import datetime
 
