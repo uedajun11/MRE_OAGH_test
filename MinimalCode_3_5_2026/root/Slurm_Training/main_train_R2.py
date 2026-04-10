@@ -107,37 +107,51 @@ def run_curriculum(args):
     Option 2: Curriculum learning on noise.
 
     Mechanism: Split total epochs into stages. Each stage uses a different
-    SNR level, starting from clean (high SNR) to noisy (low SNR).
-    The model learns physics from clean gradients first, then adapts.
+    training SNR, starting from clean (high SNR) and gradually introducing
+    noise (low SNR). The model learns the physics from clean gradients first,
+    then adapts to noisy gradients in later stages without catastrophic
+    forgetting.
 
-    Implementation: Run setup_and_run_train multiple times with different
-    SNR levels and epoch counts, loading the checkpoint from the previous stage.
+    KEY FIX (vs previous version): The validation loader uses a FIXED SNR
+    (args.curriculum_val_snr, default = min(schedule)) throughout the entire
+    curriculum. This makes best_loss comparable across stages. In the old
+    version the val loader was rebuilt per stage at the stage's training SNR,
+    which made stage 1 (cleanest) always produce the smallest val_loss and
+    best_loss would never update in later stages — effectively saving the
+    useless clean-only checkpoint.
+
+    Checkpoints saved:
+      weights.pth        — best-by-fixed-SNR-val (robust generalization)
+      weights_final.pth  — last-epoch snapshot   (fully noise-adapted)
     """
     from train_functions import (
-        setup_and_run_train, set_seed, setup_model, validate_batch_size,
+        set_seed, setup_model, validate_batch_size,
         train_net, train_net_oagh, val_net
     )
     from Data_loader import get_Pdataloader_for_train, get_Pdataloader_for_val
     from losses.residual_losses import CombinedResidualLoss
-    # NOTE: MSELoss import was removed — it was dead code and used the wrong
-    # module path (losses.mse_loss does not exist; the real file is
-    # losses.MSELoss). That typo caused the previous curriculum run to crash
-    # at startup (Report-het_oagh_R2_curriculum-6351587.out, line 30).
     from harmonizer import OAGHHarmonizer
     from torch.utils.tensorboard import SummaryWriter
     from datetime import datetime
-    from tqdm import tqdm
 
     schedule = [int(s) for s in args.curriculum_schedule.split(',')]
     n_stages = len(schedule)
     epochs_per_stage = args.epochs // n_stages
     remainder = args.epochs % n_stages
 
+    # Pick a fixed validation SNR — default to worst-case (minimum of schedule)
+    # so best_loss tracks the hardest generalization target.
+    val_snr_db = (args.curriculum_val_snr
+                  if args.curriculum_val_snr is not None
+                  else float(min(schedule)))
+
     print(f"\n{'='*60}")
     print(f"R2 Option 2: Curriculum Learning")
-    print(f"  SNR schedule: {schedule}")
+    print(f"  Training SNR schedule: {schedule}")
     print(f"  Total epochs: {args.epochs}")
     print(f"  Epochs per stage: {epochs_per_stage} (+ {remainder} in last stage)")
+    print(f"  Validation SNR (fixed): {val_snr_db} dB")
+    print(f"  Warmup epochs (OAGH-off): {args.warmup_epochs} (at start of stage 1)")
     print(f"{'='*60}\n")
 
     set_seed(42)
@@ -194,35 +208,48 @@ def run_curriculum(args):
         f.write(f"run_id: {run_id}\n")
         f.write(f"R2_option: curriculum\n")
         f.write(f"snr_schedule: {schedule}\n")
+        f.write(f"val_snr_db_fixed: {val_snr_db}\n")
         f.write(f"epochs_per_stage: {epochs_per_stage}\n")
         f.write(json.dumps(vars(args), indent=2))
 
     writer = SummaryWriter(log_dir=tb_run_dir)
     writer.add_text("Run Notes",
-                    f"R2 Curriculum: SNR schedule {schedule}, "
-                    f"{epochs_per_stage} epochs/stage", 0)
+                    f"R2 Curriculum: training schedule {schedule}, "
+                    f"val_snr={val_snr_db} dB, {epochs_per_stage} epochs/stage", 0)
+
+    # Build the validation loader ONCE with the fixed val SNR.
+    # This is the key fix — makes best_loss comparable across stages.
+    val_loader = get_Pdataloader_for_val(
+        args.validation_input, args.offsets, fov[0], batch_size, snr_db=val_snr_db
+    )
+    print(f"[curriculum] Built fixed-SNR val loader at {val_snr_db} dB "
+          f"({len(val_loader)} batches)")
 
     best_loss = float('inf')
+    best_epoch = -1
+    best_stage = -1
     global_epoch = 0
     time_start = time.time()
+    # Warmup runs plain training (no OAGH) only at the very beginning.
     warmup_epochs = args.warmup_epochs if harmonizer is not None else 0
 
     for stage_idx, snr_db in enumerate(schedule):
         stage_epochs = epochs_per_stage + (remainder if stage_idx == n_stages - 1 else 0)
+        stage_time_start = time.time()
         print(f"\n{'='*60}")
-        print(f"Curriculum Stage {stage_idx+1}/{n_stages}: SNR={snr_db} dB, "
+        print(f"Curriculum Stage {stage_idx+1}/{n_stages}: train SNR={snr_db} dB, "
               f"epochs {global_epoch}-{global_epoch + stage_epochs - 1}")
         print(f"{'='*60}")
 
-        # Rebuild data loaders with new SNR
+        # Rebuild ONLY the training loader at the new stage SNR.
         train_loader = get_Pdataloader_for_train(
             args.train_input, args.offsets, fov[0], batch_size, snr_db=snr_db
         )
-        val_loader = get_Pdataloader_for_val(
-            args.validation_input, args.offsets, fov[0], batch_size, snr_db=snr_db
-        )
+        print(f"[curriculum] Stage {stage_idx+1} train loader: {len(train_loader)} batches")
 
+        stage_best = float('inf')
         for local_epoch in range(stage_epochs):
+            epoch_start = time.time()
             use_oagh_this_epoch = (harmonizer is not None) and (global_epoch >= warmup_epochs)
 
             if use_oagh_this_epoch:
@@ -230,17 +257,20 @@ def run_curriculum(args):
                     net, device, train_loader, optimizer, grad_scaler, loss_f,
                     batch_size, harmonizer, use_physics=use_physics
                 )
+                mode_tag = 'OAGH'
             else:
                 train_total, train_data, train_physics = train_net(
                     net, device, train_loader, optimizer, grad_scaler, loss_f,
                     batch_size, use_physics=use_physics
                 )
                 oagh_diag = None
+                mode_tag = 'warm'
 
             val_total, val_data, val_physics = val_net(
                 net, device, val_loader, loss_f, batch_size, use_physics=use_physics
             )
             scheduler.step()
+            epoch_elapsed = time.time() - epoch_start
 
             # TensorBoard logging
             writer.add_scalar('Loss/Train_Total', train_total, global_epoch)
@@ -249,7 +279,8 @@ def run_curriculum(args):
             writer.add_scalar('Loss/Val_Total', val_total, global_epoch)
             writer.add_scalar('Loss/Val_Data', val_data, global_epoch)
             writer.add_scalar('Loss/Val_Physics', val_physics, global_epoch)
-            writer.add_scalar('Curriculum/SNR_dB', snr_db, global_epoch)
+            writer.add_scalar('Curriculum/Train_SNR_dB', snr_db, global_epoch)
+            writer.add_scalar('Curriculum/Val_SNR_dB', val_snr_db, global_epoch)
             writer.add_scalar('Curriculum/Stage', stage_idx, global_epoch)
             writer.add_scalar('Learning Rate', optimizer.param_groups[0]['lr'], global_epoch)
 
@@ -259,9 +290,24 @@ def run_curriculum(args):
                 writer.add_scalar('OAGH/alpha_conflict', oagh_diag['alpha_conflict'], global_epoch)
                 writer.add_scalar('OAGH/alpha_drift', oagh_diag['alpha_drift'], global_epoch)
 
-            # Save best
+            # Per-epoch progress line (always printed — helps PACE log inspection)
+            print(f"[ep {global_epoch:3d}/{args.epochs} st{stage_idx+1} "
+                  f"trSNR={snr_db:>2d} vSNR={val_snr_db:>4.1f} {mode_tag}] "
+                  f"train={train_total:.3e} "
+                  f"val={val_total:.3e} "
+                  f"lr={optimizer.param_groups[0]['lr']:.2e} "
+                  f"t={epoch_elapsed:.1f}s",
+                  flush=True)
+
+            # Update per-stage best (diagnostic)
+            if val_total > 0 and val_total < stage_best:
+                stage_best = val_total
+
+            # Save best-by-fixed-val-SNR checkpoint
             if val_total > 0 and val_total < best_loss:
                 best_loss = val_total
+                best_epoch = global_epoch + 1
+                best_stage = stage_idx
                 torch.save({
                     'epoch': global_epoch + 1,
                     'state_dict': net.state_dict(),
@@ -270,12 +316,15 @@ def run_curriculum(args):
                     'val_total_loss': val_total,
                     'best_loss': best_loss,
                     'curriculum_stage': stage_idx,
-                    'curriculum_snr': snr_db,
+                    'curriculum_train_snr': snr_db,
+                    'curriculum_val_snr': val_snr_db,
                     'harmonization': args.harmonization,
-                    'run_id': run_id
+                    'run_id': run_id,
                 }, os.path.join(dir_model, "weights.pth"))
+                print(f"  -> new best @ epoch {best_epoch} (stage {stage_idx+1}): "
+                      f"val={best_loss:.3e}", flush=True)
 
-            # Save on last epoch
+            # Save last-epoch snapshot (separate file, not overwriting best)
             if global_epoch == args.epochs - 1:
                 torch.save({
                     'epoch': global_epoch + 1,
@@ -285,104 +334,41 @@ def run_curriculum(args):
                     'val_total_loss': val_total,
                     'best_loss': best_loss,
                     'curriculum_stage': stage_idx,
-                    'curriculum_snr': snr_db,
+                    'curriculum_train_snr': snr_db,
+                    'curriculum_val_snr': val_snr_db,
                     'harmonization': args.harmonization,
-                    'run_id': run_id
-                }, os.path.join(dir_model, "weights.pth"))
+                    'run_id': run_id,
+                }, os.path.join(dir_model, "weights_final.pth"))
+                # Fallback: if best_loss never got a positive value, promote
+                # the final snapshot to the best slot so eval has something
+                # to load.
                 if best_loss == float('inf'):
-                    print("WARNING: Validation loss was never positive. Saved last-epoch model.")
+                    import shutil
+                    shutil.copyfile(
+                        os.path.join(dir_model, "weights_final.pth"),
+                        os.path.join(dir_model, "weights.pth"),
+                    )
+                    print("WARNING: val_loss never positive — "
+                          "promoted weights_final.pth to weights.pth.",
+                          flush=True)
 
             global_epoch += 1
 
+        stage_elapsed = time.time() - stage_time_start
+        print(f"[curriculum] Stage {stage_idx+1}/{n_stages} done in {stage_elapsed:.0f}s. "
+              f"Stage best val={stage_best:.3e} (at fixed val SNR={val_snr_db}).",
+              flush=True)
+
     writer.close()
     elapsed = time.time() - time_start
-    print(f"\nCurriculum training complete. {global_epoch} epochs in {elapsed:.0f}s")
-    print(f"Best val loss: {best_loss:.6f}")
-    print(f"Model saved to: {dir_model}")
-
-
-def run_difilter(args):
-    """
-    Option 3: Improved DI filter in physics loss.
-
-    Mechanism: The ResidualLoss creates MREHelmholtzLoss with k_filter=1000
-    (hardcoded). The DI sweep showed k_filter=700 is optimal for Main_Test.
-    We monkey-patch ResidualLoss.__init__ to use the specified k_filter value.
-
-    Implementation: Patch before calling setup_and_run_train, restore after.
-    """
-    from train_functions import setup_and_run_train
-    import losses.residual_losses as rl
-
-    k_filter_new = args.di_k_filter
     print(f"\n{'='*60}")
-    print(f"R2 Option 3: Improved DI k_filter in Physics Loss")
-    print(f"  Original k_filter: 1000")
-    print(f"  New k_filter: {k_filter_new}")
-    print(f"{'='*60}\n")
-
-    # Monkey-patch ResidualLoss to use the new k_filter
-    _original_init = rl.ResidualLoss.__init__
-
-    def _patched_init(self, fov=(0.2, 0.2), rho=1000, heterogeneous=False,
-                      viz=False, diagnostics=False):
-        _original_init(self, fov, rho, heterogeneous, viz, diagnostics)
-        # Store the custom k_filter for use in forward
-        self._r2_k_filter = k_filter_new
-
-    _original_forward = rl.ResidualLoss.forward
-
-    def _patched_forward(self, wave_tensors, mu_pred, mfre, W=1.0, k_pred=None):
-        # The forward creates MREHelmholtzLoss with k_filter=1000
-        # We need to intercept that. Simplest: patch MREHelmholtzLoss init
-        from losses.homogeneous import MREHelmholtzLoss as _MRE
-        _orig_mre_init = _MRE.__init__
-
-        def _mre_patched_init(mre_self, density=1000, fov=(0.2, 0.2),
-                              residual_type='raw', k_filter=None,
-                              epsilon=1e-10, verbose=False):
-            # Replace k_filter with our value
-            _orig_mre_init(mre_self, density, fov, residual_type,
-                           k_filter_new, epsilon, verbose)
-            if verbose or True:
-                print(f"  [R2 DI-filter] MREHelmholtzLoss k_filter overridden: "
-                      f"{k_filter} -> {k_filter_new}")
-
-        _MRE.__init__ = _mre_patched_init
-        try:
-            result = _original_forward(self, wave_tensors, mu_pred, mfre, W, k_pred)
-        finally:
-            _MRE.__init__ = _orig_mre_init
-        return result
-
-    rl.ResidualLoss.__init__ = _patched_init
-    rl.ResidualLoss.forward = _patched_forward
-
-    try:
-        setup_and_run_train(
-            train_input=args.train_input,
-            val_input=args.validation_input,
-            dir_model=args.model,
-            offsets=args.offsets,
-            fov=(args.field_of_view, args.field_of_view),
-            batch_size=args.batch_size,
-            epochs=args.epochs,
-            lr=args.learning_rate,
-            arch_type=args.arch_type,
-            arch_subtype=None if args.arch_subtype in [None, "None", "none"] else args.arch_subtype,
-            loss_type=args.loss_type,
-            lambda_data=args.lambda_data,
-            lambda_physics=args.lambda_physics,
-            heterogeneous=args.heterogeneous,
-            orthogonalize_het=args.orthogonalize_het,
-            mse_in_k_space=args.mse_in_k_space,
-            harmonization=args.harmonization,
-            warmup_epochs=args.warmup_epochs
-        )
-    finally:
-        # Restore originals
-        rl.ResidualLoss.__init__ = _original_init
-        rl.ResidualLoss.forward = _original_forward
+    print(f"Curriculum training complete.")
+    print(f"  Total epochs: {global_epoch}")
+    print(f"  Wall time: {elapsed:.0f}s ({elapsed/60:.1f} min)")
+    print(f"  Best val loss: {best_loss:.6e} (epoch {best_epoch}, stage {best_stage+1})")
+    print(f"  Best checkpoint: {os.path.join(dir_model, 'weights.pth')}")
+    print(f"  Final checkpoint: {os.path.join(dir_model, 'weights_final.pth')}")
+    print(f"{'='*60}")
 
 
 if __name__ == "__main__":
@@ -392,12 +378,10 @@ if __name__ == "__main__":
     active = []
     if args.curriculum:
         active.append('curriculum')
-    if args.di_k_filter is not None:
-        active.append(f'difilter_kf{int(args.di_k_filter)}')
 
     if not active:
         print("WARNING: No R2 options specified. Running identical to main_train.py.")
-        print("  Use --curriculum, or --di-k-filter <val>")
+        print("  Use --curriculum to enable curriculum learning.")
 
     print(f"\n{'#'*60}")
     print(f"  OAGH Revision 2 Training")
@@ -405,15 +389,8 @@ if __name__ == "__main__":
     print(f"{'#'*60}\n")
 
     # Route to the appropriate handler
-    # Only one R2 option at a time for clean comparison
     if args.curriculum:
-        # Curriculum has its own training loop (needs epoch-level SNR control)
-        if args.di_k_filter is not None:
-            print("NOTE: --curriculum uses its own training loop. "
-                  "--di-k-filter is ignored in this run.")
         run_curriculum(args)
-    elif args.di_k_filter is not None:
-        run_difilter(args)
     else:
         # No R2 options — fallback to standard training
         from train_functions import setup_and_run_train

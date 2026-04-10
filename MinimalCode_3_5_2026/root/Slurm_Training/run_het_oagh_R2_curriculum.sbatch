@@ -25,10 +25,25 @@ ls -la "$SLURM_DIR/main_train_R2.py" 2>&1
 echo "=== Config: HETEROGENEOUS + OAGH + R2 Curriculum ==="
 
 # R2 Option 2: Curriculum learning
-# Stage 1 (epochs 0-74):   SNR=30 (clean)   — learn physics from clean gradients
-# Stage 2 (epochs 75-149): SNR=25           — mild noise introduction
-# Stage 3 (epochs 150-224):SNR=20           — moderate noise
-# Stage 4 (epochs 225-299):SNR=15 (noisy)   — full noise adaptation
+# Stage 1 (epochs 0-74):   train SNR=30 (clean)   — learn physics from clean gradients
+# Stage 2 (epochs 75-149): train SNR=25           — mild noise introduction
+# Stage 3 (epochs 150-224):train SNR=20           — moderate noise
+# Stage 4 (epochs 225-299):train SNR=15 (noisy)   — full noise adaptation
+#
+# IMPORTANT FIXES vs previous run (which crashed on a dead import):
+#  1) Dead `from losses.mse_loss import MSELoss` removed — that typo was the
+#     sole reason the previous curriculum job crashed at startup (11s walltime).
+#  2) Validation loader is now built ONCE at a FIXED SNR (see
+#     --curriculum-val-snr below). The previous version rebuilt val loader per
+#     stage at the stage's training SNR, so best_loss always saved the
+#     stage-1 clean-only checkpoint.
+#  3) Checkpoint scheme: weights.pth (best by fixed-SNR val) AND
+#     weights_final.pth (last-epoch snapshot). Evaluate both on PACE.
+#  4) Per-epoch progress printed for every epoch — easier log inspection.
+#
+# --curriculum-val-snr 15 → worst-case noise (equals min(schedule)). This is
+# the most honest "best" target: pick the checkpoint that generalizes best at
+# the hardest SNR in the evaluation grid.
 
 TRAIN_SCRIPT="$SLURM_DIR/main_train_R2.py"
 
@@ -56,6 +71,7 @@ CMD="apptainer exec --nv \
 --warmup-epochs 50 \
 --curriculum \
 --curriculum-schedule 30,25,20,15 \
+--curriculum-val-snr 15 \
 --r2-tag R2_curriculum_30_25_20_15"
 
 echo "Running command:"
