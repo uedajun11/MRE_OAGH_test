@@ -1,20 +1,30 @@
 """
 main_train_R2.py — Revision 2 training wrapper for OAGH improvements.
 
-Two independent modifications, controlled by CLI flags:
+One remaining modification, controlled by a CLI flag:
   --curriculum         : Train clean→noisy (SNR schedule over epochs)
-  --di-k-filter <val>  : Override k_filter in the physics loss (default 1000)
 
-Each flag is independent. They can be combined but are designed to be tested
-one at a time. When no R2 flags are set, behavior is identical to main_train.py.
+When no R2 flags are set, behavior is identical to main_train.py.
 
 This file does NOT modify any existing code — it wraps setup_and_run_train
 with a thin layer that patches parameters before calling the original function.
-To withdraw: simply delete this file and the R2 sbatch files.
+To withdraw: simply delete this file and the R2 sbatch file.
 
-Note: R2 Option 1 (SNR-adaptive) was tested in PACE eval 20260410_111851 and
-withdrawn after paired t-tests showed baseline OAGH won on all 20/20 test
-conditions (p < 1e-7, Cohen's d 0.17–7.11). Code and sbatch removed.
+History of tested R2 options:
+  - R2 Option 1 (SNR-adaptive, PACE eval 20260410_111851) — WITHDRAWN.
+    Paired t-tests showed baseline OAGH won on all 20/20 test conditions
+    (p < 1e-7, Cohen's d 0.17–7.11). Code and sbatch removed.
+  - R2 Option 3 (DI k_filter=700, same eval) — WITHDRAWN. Ran to completion
+    and overwrote the baseline OAGH checkpoint, but produced essentially
+    identical test MAE (differences of 0.12–0.34 Pa on Main_Test). OAGH's
+    gradient harmonization absorbs k_filter magnitude changes. The DI-optimal
+    k_filter does not transfer to OAGH-trained networks. Code and sbatch
+    removed.
+  - R2 Option 2 (Curriculum) — NEVER TESTED. The previous run crashed at
+    startup on an import typo (losses.mse_loss → losses.MSELoss, dead code).
+    That bug is fixed; curriculum is the only remaining R2 candidate and is
+    reworked below with a fixed-SNR validation loader so that best_loss is
+    comparable across stages.
 """
 
 import argparse
@@ -73,11 +83,17 @@ def parse_args():
     parser.add_argument('--curriculum-schedule', type=str, default='30,25,20,15',
                         help='Comma-separated SNR schedule for curriculum stages. '
                              'Default: "30,25,20,15" (epochs split equally)')
-
-    parser.add_argument('--di-k-filter', type=float, default=None,
-                        help='R2 Option 3: Override k_filter in ResidualLoss physics loss. '
-                             'Default: None (uses original k_filter=1000). '
-                             'Sweep showed 700 is optimal for Main_Test.')
+    parser.add_argument('--curriculum-val-snr', type=float, default=None,
+                        help='Fixed SNR (dB) used for validation throughout curriculum. '
+                             'Default: None → uses min(schedule), i.e. worst-case noise. '
+                             'Using a fixed val SNR is essential so best_loss is '
+                             'comparable across stages; otherwise best_loss would '
+                             'always save the stage-1 (cleanest) checkpoint.')
+    parser.add_argument('--curriculum-warmup-in-stage1-only', action='store_true',
+                        default=True,
+                        help='If set, --warmup-epochs of plain training happens only '
+                             'at the start of stage 1 (cleanest stage), and OAGH is '
+                             'active for all subsequent stages. Default: True.')
 
     parser.add_argument('--r2-tag', type=str, default=None,
                         help='Tag appended to model directory for identification. '
@@ -103,7 +119,10 @@ def run_curriculum(args):
     )
     from Data_loader import get_Pdataloader_for_train, get_Pdataloader_for_val
     from losses.residual_losses import CombinedResidualLoss
-    from losses.mse_loss import MSELoss
+    # NOTE: MSELoss import was removed — it was dead code and used the wrong
+    # module path (losses.mse_loss does not exist; the real file is
+    # losses.MSELoss). That typo caused the previous curriculum run to crash
+    # at startup (Report-het_oagh_R2_curriculum-6351587.out, line 30).
     from harmonizer import OAGHHarmonizer
     from torch.utils.tensorboard import SummaryWriter
     from datetime import datetime
