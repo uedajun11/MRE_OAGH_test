@@ -204,6 +204,14 @@ def run_curriculum(args):
     tb_run_dir = os.path.join(dir_model, "tensorboard_logs", f"run_{run_id}")
     os.makedirs(tb_run_dir, exist_ok=True)
 
+    # IMPORTANT: print tb_run_dir so the evaluator notebook
+    # (Model Checker Ueda dynamic 2.ipynb) can extract run_YYYYMMDD_HHMMSS
+    # via its regex r'(run_\d{8}_\d{6})' on the Slurm report.
+    # Without this line the report is flagged as "(no ML run - direct inversion)"
+    # and the curriculum checkpoint is never evaluated.
+    print(f"TensorBoard logs: {tb_run_dir}", flush=True)
+    print(f"run_id: run_{run_id}", flush=True)
+
     with open(os.path.join(tb_run_dir, "meta.txt"), "w") as f:
         f.write(f"run_id: {run_id}\n")
         f.write(f"R2_option: curriculum\n")
