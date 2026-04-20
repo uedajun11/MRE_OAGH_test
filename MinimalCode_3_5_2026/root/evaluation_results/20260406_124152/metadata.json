@@ -1,0 +1,58 @@
+{
+  "timestamp": "20260406_124152",
+  "run_ids": [
+    "run_20260405_224124",
+    "run_20260405_224310",
+    "run_20260405_225425",
+    "run_20260405_225623",
+    "run_20260405_230142",
+    "run_20260406_002334",
+    "run_20260406_014803",
+    "run_20260406_015609",
+    "run_20260406_015800",
+    "run_20260406_015821",
+    "run_20260406_044156"
+  ],
+  "report_to_run_mapping": {
+    "Report-direct_inv-6286100.out": null,
+    "Report-fixed_het-6286101.out": "run_20260405_224124",
+    "Report-fixed_hom-6286102.out": "run_20260405_224310",
+    "Report-het_gradnorm-6286103.out": "run_20260405_225425",
+    "Report-het_oagh-6286105.out": "run_20260405_230142",
+    "Report-het_oagh_c-6286104.out": "run_20260405_225623",
+    "Report-het_pcgrad-6286106.out": "run_20260406_002334",
+    "Report-hom_gradnorm-6286107.out": "run_20260406_014803",
+    "Report-hom_oagh-6286109.out": "run_20260406_015800",
+    "Report-hom_oagh_c-6286108.out": "run_20260406_015609",
+    "Report-hom_pcgrad-6286110.out": "run_20260406_015821",
+    "Report-mse_only-6286111.out": "run_20260406_044156"
+  },
+  "num_models": 11,
+  "datasets": [
+    "Main_Test",
+    "Inclusion_R0.3125cm",
+    "Inclusion_R0.625cm",
+    "Inclusion_R1.25cm",
+    "Inclusion_R2.5cm"
+  ],
+  "snr_levels": [
+    30,
+    25,
+    20,
+    15
+  ],
+  "total_samples_evaluated": 61600,
+  "models_evaluated": [
+    "FDTDNet/mse/lam_data1_0/lam_phys0_0/bs64",
+    "FDTDNet/residual/het/gradnorm/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/het/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/het/oagh/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/het/oagh_c/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/het/pcgrad/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/gradnorm/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/oagh/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/oagh_c/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/pcgrad/lam_data1_0/lam_phys1_0/bs64"
+  ]
+}

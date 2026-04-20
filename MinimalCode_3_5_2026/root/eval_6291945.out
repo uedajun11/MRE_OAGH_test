@@ -1,0 +1,26 @@
+---------------------------------------
+Begin Slurm Prolog: Apr-06-2026 09:21:30
+Job ID:    6291945
+User ID:   jueda3
+Account:   gts-jueda3
+Job name:  mre_eval
+Partition: cpu-medium
+QOS:       inferno
+---------------------------------------
+Python executable:
+Python 3.9.25
+Torch check:
+torch: 2.8.0+cu128
+CUDA available: False
+---------------------------------------
+Begin Slurm Epilog: Apr-06-2026 09:21:43
+Job ID:        6291945
+User ID:       jueda3
+Account:       gts-jueda3
+Job name:      mre_eval
+Resources:     cpu=4,mem=64G,node=1
+Rsrc Used:     cput=00:00:56,vmem=0,walltime=00:00:14,mem=766972K,energy_used=0
+Partition:     cpu-medium
+QOS:           inferno
+Nodes:         atl1-1-02-003-1-1
+---------------------------------------

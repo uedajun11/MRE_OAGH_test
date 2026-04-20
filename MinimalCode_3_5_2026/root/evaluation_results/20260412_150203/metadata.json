@@ -1,0 +1,70 @@
+{
+  "timestamp": "20260412_150203",
+  "run_ids": [
+    "run_20260409_104555",
+    "run_20260409_105238",
+    "run_20260409_113553",
+    "run_20260409_125753",
+    "run_20260409_145829",
+    "run_20260409_161743",
+    "run_20260409_165831",
+    "run_20260409_170205",
+    "run_20260409_182009",
+    "run_20260409_185736",
+    "run_20260409_190205",
+    "run_20260409_193349",
+    "run_20260409_194508",
+    "run_20260411_165458"
+  ],
+  "report_to_run_mapping": {
+    "Report-direct_inv_sweep-6305055.out": null,
+    "Report-direct_inv_sweep-6349175.out": null,
+    "Report-fixed_het-6349176.out": "run_20260409_104555",
+    "Report-fixed_hom-6349177.out": "run_20260409_105238",
+    "Report-het_gradnorm-6349178.out": "run_20260409_113553",
+    "Report-het_oagh-6349180.out": "run_20260409_145829",
+    "Report-het_oagh_R2_adaptive-6351594.out": "run_20260409_194508",
+    "Report-het_oagh_R2_curriculum-6351587.out": null,
+    "Report-het_oagh_R2_curriculum-6375188.out": null,
+    "Report-het_oagh_R2_curriculum-6381127.out": null,
+    "Report-het_oagh_R2_curriculum-6426999.out": "run_20260411_165458",
+    "Report-het_oagh_R2_difilter-6351588.out": "run_20260409_193349",
+    "Report-het_oagh_c-6349179.out": "run_20260409_125753",
+    "Report-het_pcgrad-6349181.out": "run_20260409_161743",
+    "Report-hom_gradnorm-6349182.out": "run_20260409_165831",
+    "Report-hom_oagh-6349184.out": "run_20260409_182009",
+    "Report-hom_oagh_c-6349183.out": "run_20260409_170205",
+    "Report-hom_pcgrad-6349185.out": "run_20260409_185736",
+    "Report-mse_only-6349186.out": "run_20260409_190205"
+  },
+  "num_models": 13,
+  "datasets": [
+    "Main_Test",
+    "Inclusion_R0.3125cm",
+    "Inclusion_R0.625cm",
+    "Inclusion_R1.25cm",
+    "Inclusion_R2.5cm"
+  ],
+  "snr_levels": [
+    30,
+    25,
+    20,
+    15
+  ],
+  "total_samples_evaluated": 72800,
+  "models_evaluated": [
+    "FDTDNet/mse/lam_data1_0/lam_phys0_0/bs64",
+    "FDTDNet/residual/het/gradnorm/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/het/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/het/oagh/R2_curriculum_30_25_20_15/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/het/oagh/lam_data1_0/lam_phys0_8/bs64",
+    "FDTDNet/residual/het/oagh/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/het/oagh_c/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/het/pcgrad/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/gradnorm/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/oagh/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/oagh_c/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/residual/hom/pcgrad/lam_data1_0/lam_phys1_0/bs64"
+  ]
+}

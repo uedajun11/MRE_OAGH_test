@@ -1,0 +1,43 @@
+---------------------------------------
+Begin Slurm Prolog: Apr-09-2026 19:33:18
+Job ID:    6351587
+User ID:   jueda3
+Account:   gts-jueda3
+Job name:  het_oagh_R2c
+Partition: gpu-h100
+QOS:       inferno
+---------------------------------------
+=== Pre-flight check ===
+ROOT_DIR: /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root
+-rw-r--r--. 1 jueda3 pace-jueda3 34252 Apr  5 17:15 /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/train_functions.py
+-rw-r--r--. 1 jueda3 pace-jueda3 22979 Apr  9 12:23 /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/Slurm_Training/main_train_R2.py
+=== Config: HETEROGENEOUS + OAGH + R2 Curriculum ===
+Running command:
+apptainer exec --nv --env PYTHONPATH=/storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root --bind /storage /usr/local/pace-apps/manual/packages/ngc-images/pytorch-2.1.0.sif python /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/Slurm_Training/main_train_R2.py --epochs 300 --batch-size 64 --learning-rate 0.001 --train-input /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Training/ --validation-input /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Validation/pt_files/ --model /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Model_Logs/ --offsets 8 --field-of-view 0.2 --arch-type FDTDNet --arch-subtype None --loss-type residual --lambda-data 1.0 --lambda-physics 1.0 --mse-in-k-space --heterogeneous --harmonization oagh --warmup-epochs 50 --curriculum --curriculum-schedule 30,25,20,15 --r2-tag R2_curriculum_30_25_20_15
+[main_train_R2.py] parent_dir = /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root
+[main_train_R2.py] PYTHONPATH env = /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root
+
+############################################################
+  OAGH Revision 2 Training
+  Active options: curriculum
+############################################################
+
+Traceback (most recent call last):
+  File "/storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/Slurm_Training/main_train_R2.py", line 481, in <module>
+    run_curriculum(args)
+  File "/storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/Slurm_Training/main_train_R2.py", line 190, in run_curriculum
+    from losses.mse_loss import MSELoss
+ModuleNotFoundError: No module named 'losses.mse_loss'
+srun: error: atl1-1-01-006-29-0: task 0: Exited with exit code 1
+---------------------------------------
+Begin Slurm Epilog: Apr-09-2026 19:33:28
+Job ID:        6351587
+User ID:       jueda3
+Account:       gts-jueda3
+Job name:      het_oagh_R2c
+Resources:     cpu=8,gres/gpu:h100=1,mem=40G,node=1
+Rsrc Used:     cput=00:01:28,vmem=0,walltime=00:00:11,mem=9052K,energy_used=0
+Partition:     gpu-h100
+QOS:           inferno
+Nodes:         atl1-1-01-006-29-0
+---------------------------------------

@@ -1,0 +1,30 @@
+run_id: 20260410_150550
+R2_option: curriculum
+snr_schedule: [30, 25, 20, 15]
+val_snr_db_fixed: 15.0
+epochs_per_stage: 75
+{
+  "epochs": 300,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "train_input": "/storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Training/",
+  "validation_input": "/storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Validation/pt_files/",
+  "model": "/storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Model_Logs/",
+  "offsets": 8,
+  "field_of_view": 0.2,
+  "arch_type": "FDTDNet",
+  "arch_subtype": "None",
+  "loss_type": "residual",
+  "lambda_data": 1.0,
+  "lambda_physics": 1.0,
+  "heterogeneous": true,
+  "orthogonalize_het": false,
+  "mse_in_k_space": true,
+  "harmonization": "oagh",
+  "warmup_epochs": 50,
+  "curriculum": true,
+  "curriculum_schedule": "30,25,20,15",
+  "curriculum_val_snr": 15.0,
+  "curriculum_warmup_in_stage1_only": true,
+  "r2_tag": "R2_curriculum_30_25_20_15"
+}
