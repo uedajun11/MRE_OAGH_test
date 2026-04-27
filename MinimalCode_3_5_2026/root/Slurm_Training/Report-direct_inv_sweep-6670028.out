@@ -1,0 +1,715 @@
+---------------------------------------
+Begin Slurm Prolog: Apr-20-2026 14:39:28
+Job ID:    6670028
+User ID:   jueda3
+Account:   gts-jueda3
+Job name:  di_sweep
+Partition: gpu-h100
+QOS:       inferno
+---------------------------------------
+=== Pre-flight check ===
+ROOT_DIR: /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root
+DATA_DIR: /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data
+-rwxr-xr-x. 1 jueda3 pace-jueda3 18059 Apr 20 14:25 /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/losses/homogeneous.py
+=== Config: DIRECT INVERSION PARAMETER SWEEP ===
+Running command:
+apptainer exec --nv --env PYTHONPATH=/storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root --bind /storage /usr/local/pace-apps/manual/packages/ngc-images/pytorch-2.1.0.sif python /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/Slurm_Training/run_direct_inversion.py --test-dirs /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Test/pt_files/ /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R0_3125cm/pt_files/ /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R0_625cm/pt_files/ /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R1_25cm/pt_files/ /storage/home/hcoda1/2/jueda3/r-jueda3-0/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Inclusion/R2_5cm/pt_files/ --output-dir /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Model_Logs/DirectInversion_sweep_20260420_143929 --fov 0.2 --offsets 8 --snr-levels 30 25 20 15 --k-filter-sweep 200 300 500 700 1000 --medfilt-sweep 3 5 7
+
+Sweep: 5 k_filter values x 3 medfilt kernels = 15 configurations
+Each config evaluates 5 datasets x 4 SNR levels = 20 conditions
+Total: 300 evaluation runs
+
+/storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/root/Slurm_Training/run_direct_inversion.py:272: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  mu_gt_t = torch.tensor(mu_gt_np).float()
+Loading datasets...
+  [pt_files] Found 1000 .pt files
+  [pt_files] Found 100 .pt files
+  [pt_files] Found 100 .pt files
+  [pt_files] Found 100 .pt files
+  [pt_files] Found 100 .pt files
+Loaded 5 datasets.
+
+
+############################################################
+  CONFIG 1/15: k_filter=200.0, medfilt=3
+############################################################
+
+============================================================
+Config: k_filter=200, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   83.7424  mae_mu=20850.7660  time=37.7s
+  SNR=25dB  |  mae_k=   84.1902  mae_mu=19543.7499  time=21.4s
+  SNR=20dB  |  mae_k=   85.2211  mae_mu=18595.9330  time=21.7s
+  SNR=15dB  |  mae_k=   87.4927  mae_mu=18494.1115  time=22.0s
+
+============================================================
+Config: k_filter=200, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  159.2571  mae_mu=12899.0554  time=3.2s
+  SNR=25dB  |  mae_k=  159.4546  mae_mu=12921.3126  time=2.2s
+  SNR=20dB  |  mae_k=  159.9680  mae_mu=13048.3332  time=2.2s
+  SNR=15dB  |  mae_k=  160.9293  mae_mu=13390.3155  time=2.2s
+
+============================================================
+Config: k_filter=200, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  153.2290  mae_mu=13289.4264  time=3.2s
+  SNR=25dB  |  mae_k=  153.3171  mae_mu=13256.8252  time=2.1s
+  SNR=20dB  |  mae_k=  153.6089  mae_mu=13260.2604  time=2.2s
+  SNR=15dB  |  mae_k=  154.2927  mae_mu=13296.2129  time=2.2s
+
+============================================================
+Config: k_filter=200, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  142.6664  mae_mu=13109.9810  time=2.9s
+  SNR=25dB  |  mae_k=  142.7476  mae_mu=13123.8476  time=2.1s
+  SNR=20dB  |  mae_k=  143.0149  mae_mu=12985.0187  time=2.2s
+  SNR=15dB  |  mae_k=  143.6852  mae_mu=13057.2783  time=2.2s
+
+============================================================
+Config: k_filter=200, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  123.2640  mae_mu=11622.9089  time=3.1s
+  SNR=25dB  |  mae_k=  123.3371  mae_mu=11608.5719  time=2.1s
+  SNR=20dB  |  mae_k=  123.5724  mae_mu=11553.2635  time=2.2s
+  SNR=15dB  |  mae_k=  124.1992  mae_mu=11633.1094  time=2.2s
+
+############################################################
+  CONFIG 2/15: k_filter=200.0, medfilt=5
+############################################################
+
+============================================================
+Config: k_filter=200, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   83.7424  mae_mu=15179.0412  time=36.0s
+  SNR=25dB  |  mae_k=   84.1862  mae_mu=14520.8110  time=37.6s
+  SNR=20dB  |  mae_k=   85.2210  mae_mu=14211.3769  time=38.6s
+  SNR=15dB  |  mae_k=   87.4889  mae_mu=14836.4685  time=39.4s
+
+============================================================
+Config: k_filter=200, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  159.2503  mae_mu=12766.5540  time=3.7s
+  SNR=25dB  |  mae_k=  159.4597  mae_mu=12791.5141  time=3.8s
+  SNR=20dB  |  mae_k=  159.9702  mae_mu=12880.8192  time=4.0s
+  SNR=15dB  |  mae_k=  160.9291  mae_mu=13131.5805  time=4.0s
+
+============================================================
+Config: k_filter=200, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  153.2199  mae_mu=12770.0223  time=3.5s
+  SNR=25dB  |  mae_k=  153.3120  mae_mu=12738.0537  time=3.7s
+  SNR=20dB  |  mae_k=  153.6106  mae_mu=12749.3649  time=3.9s
+  SNR=15dB  |  mae_k=  154.2938  mae_mu=12874.3462  time=4.0s
+
+============================================================
+Config: k_filter=200, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  142.6685  mae_mu=12367.0284  time=3.5s
+  SNR=25dB  |  mae_k=  142.7456  mae_mu=12325.7779  time=3.7s
+  SNR=20dB  |  mae_k=  143.0190  mae_mu=12332.6409  time=3.9s
+  SNR=15dB  |  mae_k=  143.6782  mae_mu=12434.1223  time=4.0s
+
+============================================================
+Config: k_filter=200, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  123.2660  mae_mu=10998.2885  time=3.5s
+  SNR=25dB  |  mae_k=  123.3411  mae_mu=10978.9615  time=3.7s
+  SNR=20dB  |  mae_k=  123.5768  mae_mu=10988.1585  time=3.9s
+  SNR=15dB  |  mae_k=  124.2018  mae_mu=11100.2987  time=4.0s
+
+############################################################
+  CONFIG 3/15: k_filter=200.0, medfilt=7
+############################################################
+
+============================================================
+Config: k_filter=200, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   83.7418  mae_mu=12981.4359  time=54.1s
+  SNR=25dB  |  mae_k=   84.1871  mae_mu=12660.9788  time=56.5s
+  SNR=20dB  |  mae_k=   85.2181  mae_mu=12662.9805  time=58.5s
+  SNR=15dB  |  mae_k=   87.4900  mae_mu=13408.9981  time=60.0s
+
+============================================================
+Config: k_filter=200, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  159.2561  mae_mu=12731.4320  time=5.4s
+  SNR=25dB  |  mae_k=  159.4504  mae_mu=12752.4021  time=5.8s
+  SNR=20dB  |  mae_k=  159.9650  mae_mu=12822.1850  time=6.0s
+  SNR=15dB  |  mae_k=  160.9211  mae_mu=13023.0625  time=6.1s
+
+============================================================
+Config: k_filter=200, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  153.2219  mae_mu=12571.4071  time=5.3s
+  SNR=25dB  |  mae_k=  153.3089  mae_mu=12572.6521  time=5.6s
+  SNR=20dB  |  mae_k=  153.6070  mae_mu=12601.8406  time=5.9s
+  SNR=15dB  |  mae_k=  154.2987  mae_mu=12717.0323  time=6.1s
+
+============================================================
+Config: k_filter=200, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  142.6664  mae_mu=12083.7374  time=5.2s
+  SNR=25dB  |  mae_k=  142.7457  mae_mu=12081.7863  time=5.5s
+  SNR=20dB  |  mae_k=  143.0230  mae_mu=12105.1133  time=5.8s
+  SNR=15dB  |  mae_k=  143.6870  mae_mu=12215.3836  time=6.0s
+
+============================================================
+Config: k_filter=200, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=  123.2649  mae_mu=10767.1965  time=5.2s
+  SNR=25dB  |  mae_k=  123.3385  mae_mu=10769.2044  time=5.6s
+  SNR=20dB  |  mae_k=  123.5717  mae_mu=10790.5306  time=5.9s
+  SNR=15dB  |  mae_k=  124.2035  mae_mu=10895.6330  time=6.1s
+
+############################################################
+  CONFIG 4/15: k_filter=300.0, medfilt=3
+############################################################
+
+============================================================
+Config: k_filter=300, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   49.9409  mae_mu=10322.4972  time=20.5s
+  SNR=25dB  |  mae_k=   50.5833  mae_mu= 9012.0465  time=21.3s
+  SNR=20dB  |  mae_k=   52.1003  mae_mu= 7852.5568  time=21.6s
+  SNR=15dB  |  mae_k=   55.3556  mae_mu= 7436.7495  time=21.9s
+
+============================================================
+Config: k_filter=300, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   79.6677  mae_mu= 2891.4482  time=2.1s
+  SNR=25dB  |  mae_k=   79.6945  mae_mu= 2886.8641  time=2.2s
+  SNR=20dB  |  mae_k=   80.0663  mae_mu= 2925.3677  time=2.2s
+  SNR=15dB  |  mae_k=   81.0959  mae_mu= 3063.6144  time=2.2s
+
+============================================================
+Config: k_filter=300, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   75.2377  mae_mu= 2857.2381  time=2.1s
+  SNR=25dB  |  mae_k=   75.2443  mae_mu= 2849.9428  time=2.2s
+  SNR=20dB  |  mae_k=   75.4774  mae_mu= 2861.2376  time=2.2s
+  SNR=15dB  |  mae_k=   76.2933  mae_mu= 2909.7002  time=2.2s
+
+============================================================
+Config: k_filter=300, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   70.6679  mae_mu= 3445.0894  time=2.0s
+  SNR=25dB  |  mae_k=   70.6859  mae_mu= 3415.1926  time=2.1s
+  SNR=20dB  |  mae_k=   70.8751  mae_mu= 3326.4229  time=2.2s
+  SNR=15dB  |  mae_k=   71.6580  mae_mu= 3353.7052  time=2.2s
+
+============================================================
+Config: k_filter=300, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   59.8650  mae_mu= 3817.7275  time=2.0s
+  SNR=25dB  |  mae_k=   59.8929  mae_mu= 3683.8479  time=2.2s
+  SNR=20dB  |  mae_k=   60.0803  mae_mu= 3544.6468  time=2.2s
+  SNR=15dB  |  mae_k=   60.8506  mae_mu= 3509.7696  time=2.2s
+
+############################################################
+  CONFIG 5/15: k_filter=300.0, medfilt=5
+############################################################
+
+============================================================
+Config: k_filter=300, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   49.9422  mae_mu= 6236.1044  time=35.7s
+  SNR=25dB  |  mae_k=   50.5788  mae_mu= 5677.6299  time=37.4s
+  SNR=20dB  |  mae_k=   52.1058  mae_mu= 5240.7240  time=38.6s
+  SNR=15dB  |  mae_k=   55.3550  mae_mu= 5254.3726  time=39.3s
+
+============================================================
+Config: k_filter=300, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   79.6642  mae_mu= 2765.2257  time=3.7s
+  SNR=25dB  |  mae_k=   79.6909  mae_mu= 2767.0529  time=3.9s
+  SNR=20dB  |  mae_k=   80.0522  mae_mu= 2796.8515  time=4.0s
+  SNR=15dB  |  mae_k=   81.0894  mae_mu= 2901.2541  time=4.0s
+
+============================================================
+Config: k_filter=300, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   75.2417  mae_mu= 2681.9107  time=3.7s
+  SNR=25dB  |  mae_k=   75.2464  mae_mu= 2680.4110  time=3.8s
+  SNR=20dB  |  mae_k=   75.4764  mae_mu= 2689.9003  time=4.0s
+  SNR=15dB  |  mae_k=   76.2955  mae_mu= 2734.5511  time=4.0s
+
+============================================================
+Config: k_filter=300, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   70.6869  mae_mu= 2922.2272  time=3.6s
+  SNR=25dB  |  mae_k=   70.6792  mae_mu= 2904.1813  time=3.8s
+  SNR=20dB  |  mae_k=   70.8833  mae_mu= 2899.7578  time=3.9s
+  SNR=15dB  |  mae_k=   71.6705  mae_mu= 2909.0990  time=4.0s
+
+============================================================
+Config: k_filter=300, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   59.8697  mae_mu= 2980.5620  time=3.6s
+  SNR=25dB  |  mae_k=   59.8839  mae_mu= 2931.1987  time=3.8s
+  SNR=20dB  |  mae_k=   60.0766  mae_mu= 2880.7349  time=3.9s
+  SNR=15dB  |  mae_k=   60.8243  mae_mu= 2894.3378  time=4.0s
+
+############################################################
+  CONFIG 6/15: k_filter=300.0, medfilt=7
+############################################################
+
+============================================================
+Config: k_filter=300, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   49.9407  mae_mu= 4758.4246  time=53.8s
+  SNR=25dB  |  mae_k=   50.5783  mae_mu= 4428.7046  time=56.2s
+  SNR=20dB  |  mae_k=   52.1026  mae_mu= 4233.6032  time=58.2s
+  SNR=15dB  |  mae_k=   55.3569  mae_mu= 4412.3562  time=59.8s
+
+============================================================
+Config: k_filter=300, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   79.6662  mae_mu= 2721.9837  time=5.6s
+  SNR=25dB  |  mae_k=   79.6976  mae_mu= 2726.2779  time=5.8s
+  SNR=20dB  |  mae_k=   80.0622  mae_mu= 2749.8474  time=6.0s
+  SNR=15dB  |  mae_k=   81.0907  mae_mu= 2831.8619  time=6.1s
+
+============================================================
+Config: k_filter=300, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   75.2388  mae_mu= 2617.5129  time=5.4s
+  SNR=25dB  |  mae_k=   75.2559  mae_mu= 2618.0119  time=5.7s
+  SNR=20dB  |  mae_k=   75.4735  mae_mu= 2626.6483  time=6.0s
+  SNR=15dB  |  mae_k=   76.2885  mae_mu= 2667.0200  time=6.1s
+
+============================================================
+Config: k_filter=300, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   70.6774  mae_mu= 2729.4415  time=5.3s
+  SNR=25dB  |  mae_k=   70.6850  mae_mu= 2726.9069  time=5.6s
+  SNR=20dB  |  mae_k=   70.8863  mae_mu= 2727.1608  time=5.9s
+  SNR=15dB  |  mae_k=   71.6468  mae_mu= 2753.9505  time=6.0s
+
+============================================================
+Config: k_filter=300, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   59.8655  mae_mu= 2659.3216  time=5.3s
+  SNR=25dB  |  mae_k=   59.8947  mae_mu= 2650.2146  time=5.6s
+  SNR=20dB  |  mae_k=   60.0833  mae_mu= 2638.4631  time=5.9s
+  SNR=15dB  |  mae_k=   60.8338  mae_mu= 2649.3722  time=6.0s
+
+############################################################
+  CONFIG 7/15: k_filter=500.0, medfilt=3
+############################################################
+
+============================================================
+Config: k_filter=500, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.9636  mae_mu= 3925.5809  time=20.0s
+  SNR=25dB  |  mae_k=   30.0996  mae_mu= 3540.9244  time=20.8s
+  SNR=20dB  |  mae_k=   32.5212  mae_mu= 3288.4950  time=21.2s
+  SNR=15dB  |  mae_k=   37.0604  mae_mu= 3206.1962  time=21.6s
+
+============================================================
+Config: k_filter=500, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.6618  mae_mu= 2979.8133  time=2.1s
+  SNR=25dB  |  mae_k=   28.7910  mae_mu= 2736.7430  time=2.1s
+  SNR=20dB  |  mae_k=   29.1931  mae_mu= 2209.9758  time=2.2s
+  SNR=15dB  |  mae_k=   30.2868  mae_mu= 1840.1907  time=2.2s
+
+============================================================
+Config: k_filter=500, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.4120  mae_mu= 1165.8527  time=2.0s
+  SNR=25dB  |  mae_k=   28.4418  mae_mu= 1095.3595  time=2.1s
+  SNR=20dB  |  mae_k=   28.7151  mae_mu= 1006.8772  time=2.1s
+  SNR=15dB  |  mae_k=   29.6835  mae_mu=  958.2328  time=2.2s
+
+============================================================
+Config: k_filter=500, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   27.0522  mae_mu= 1485.4305  time=2.0s
+  SNR=25dB  |  mae_k=   27.1046  mae_mu= 1310.7514  time=2.1s
+  SNR=20dB  |  mae_k=   27.4764  mae_mu= 1178.1275  time=2.1s
+  SNR=15dB  |  mae_k=   28.6251  mae_mu= 1089.3696  time=2.2s
+
+============================================================
+Config: k_filter=500, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   24.2748  mae_mu= 2221.6875  time=2.0s
+  SNR=25dB  |  mae_k=   24.3804  mae_mu= 2051.1371  time=2.1s
+  SNR=20dB  |  mae_k=   24.8016  mae_mu= 1703.2982  time=2.2s
+  SNR=15dB  |  mae_k=   26.0776  mae_mu= 1468.4521  time=2.2s
+
+############################################################
+  CONFIG 8/15: k_filter=500.0, medfilt=5
+############################################################
+
+============================================================
+Config: k_filter=500, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.9659  mae_mu= 2216.3473  time=34.6s
+  SNR=25dB  |  mae_k=   30.0986  mae_mu= 2061.2676  time=36.4s
+  SNR=20dB  |  mae_k=   32.5358  mae_mu= 1989.2974  time=37.7s
+  SNR=15dB  |  mae_k=   37.0606  mae_mu= 2071.9864  time=38.8s
+
+============================================================
+Config: k_filter=500, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.6600  mae_mu= 1581.4284  time=3.6s
+  SNR=25dB  |  mae_k=   28.7978  mae_mu= 1436.7783  time=3.8s
+  SNR=20dB  |  mae_k=   29.1762  mae_mu= 1286.7436  time=3.9s
+  SNR=15dB  |  mae_k=   30.2773  mae_mu= 1167.7237  time=4.0s
+
+============================================================
+Config: k_filter=500, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.4098  mae_mu=  855.3307  time=3.5s
+  SNR=25dB  |  mae_k=   28.4373  mae_mu=  829.6546  time=3.7s
+  SNR=20dB  |  mae_k=   28.7161  mae_mu=  801.1221  time=3.9s
+  SNR=15dB  |  mae_k=   29.6858  mae_mu=  792.1102  time=4.0s
+
+============================================================
+Config: k_filter=500, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   27.0559  mae_mu=  959.5633  time=3.5s
+  SNR=25dB  |  mae_k=   27.1273  mae_mu=  931.3747  time=3.7s
+  SNR=20dB  |  mae_k=   27.4634  mae_mu=  868.6148  time=3.8s
+  SNR=15dB  |  mae_k=   28.6243  mae_mu=  839.3679  time=3.9s
+
+============================================================
+Config: k_filter=500, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   24.2785  mae_mu= 1289.1418  time=3.5s
+  SNR=25dB  |  mae_k=   24.3832  mae_mu= 1212.2111  time=3.7s
+  SNR=20dB  |  mae_k=   24.7866  mae_mu= 1094.4227  time=3.9s
+  SNR=15dB  |  mae_k=   26.0683  mae_mu= 1016.0082  time=3.9s
+
+############################################################
+  CONFIG 9/15: k_filter=500.0, medfilt=7
+############################################################
+
+============================================================
+Config: k_filter=500, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.9621  mae_mu= 1562.9903  time=52.1s
+  SNR=25dB  |  mae_k=   30.0889  mae_mu= 1494.9305  time=54.7s
+  SNR=20dB  |  mae_k=   32.5203  mae_mu= 1488.6497  time=56.9s
+  SNR=15dB  |  mae_k=   37.0570  mae_mu= 1618.2888  time=58.4s
+
+============================================================
+Config: k_filter=500, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.6629  mae_mu= 1041.6150  time=5.4s
+  SNR=25dB  |  mae_k=   28.7787  mae_mu=  997.5943  time=5.7s
+  SNR=20dB  |  mae_k=   29.1975  mae_mu=  939.5976  time=5.9s
+  SNR=15dB  |  mae_k=   30.2831  mae_mu=  895.6300  time=6.0s
+
+============================================================
+Config: k_filter=500, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.4069  mae_mu=  744.8486  time=5.3s
+  SNR=25dB  |  mae_k=   28.4488  mae_mu=  734.6541  time=5.6s
+  SNR=20dB  |  mae_k=   28.6977  mae_mu=  728.0159  time=5.8s
+  SNR=15dB  |  mae_k=   29.6866  mae_mu=  727.4924  time=6.0s
+
+============================================================
+Config: k_filter=500, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   27.0539  mae_mu=  789.1529  time=5.2s
+  SNR=25dB  |  mae_k=   27.1082  mae_mu=  772.0562  time=5.5s
+  SNR=20dB  |  mae_k=   27.4619  mae_mu=  752.6483  time=5.8s
+  SNR=15dB  |  mae_k=   28.6292  mae_mu=  744.6505  time=6.0s
+
+============================================================
+Config: k_filter=500, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   24.2886  mae_mu=  946.7929  time=5.2s
+  SNR=25dB  |  mae_k=   24.3637  mae_mu=  917.0404  time=5.5s
+  SNR=20dB  |  mae_k=   24.7753  mae_mu=  868.0060  time=5.8s
+  SNR=15dB  |  mae_k=   26.0845  mae_mu=  821.5672  time=6.0s
+
+############################################################
+  CONFIG 10/15: k_filter=700.0, medfilt=3
+############################################################
+
+============================================================
+Config: k_filter=700, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   25.4899  mae_mu= 2409.8666  time=19.7s
+  SNR=25dB  |  mae_k=   27.7451  mae_mu= 2359.4214  time=20.2s
+  SNR=20dB  |  mae_k=   31.8759  mae_mu= 2473.2686  time=20.8s
+  SNR=15dB  |  mae_k=   38.6853  mae_mu= 2703.6685  time=21.1s
+
+============================================================
+Config: k_filter=700, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   18.4576  mae_mu= 2662.3036  time=2.1s
+  SNR=25dB  |  mae_k=   18.8309  mae_mu= 2167.8740  time=2.1s
+  SNR=20dB  |  mae_k=   19.6705  mae_mu= 1781.9097  time=2.2s
+  SNR=15dB  |  mae_k=   21.6999  mae_mu= 1432.7085  time=2.3s
+
+============================================================
+Config: k_filter=700, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   19.9088  mae_mu=  955.3466  time=2.0s
+  SNR=25dB  |  mae_k=   20.0836  mae_mu=  847.6681  time=2.1s
+  SNR=20dB  |  mae_k=   20.8004  mae_mu=  751.8102  time=2.2s
+  SNR=15dB  |  mae_k=   22.6523  mae_mu=  701.9902  time=2.2s
+
+============================================================
+Config: k_filter=700, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   19.9222  mae_mu=  813.6490  time=2.0s
+  SNR=25dB  |  mae_k=   20.1496  mae_mu=  753.6223  time=2.1s
+  SNR=20dB  |  mae_k=   20.8936  mae_mu=  674.5499  time=2.1s
+  SNR=15dB  |  mae_k=   22.8531  mae_mu=  658.1765  time=2.2s
+
+============================================================
+Config: k_filter=700, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   18.5949  mae_mu= 1160.1875  time=2.0s
+  SNR=25dB  |  mae_k=   18.8769  mae_mu=  993.2322  time=2.1s
+  SNR=20dB  |  mae_k=   19.7379  mae_mu=  884.6307  time=2.1s
+  SNR=15dB  |  mae_k=   21.8339  mae_mu=  827.2686  time=2.2s
+
+############################################################
+  CONFIG 11/15: k_filter=700.0, medfilt=5
+############################################################
+
+============================================================
+Config: k_filter=700, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   25.4965  mae_mu= 1352.1665  time=34.3s
+  SNR=25dB  |  mae_k=   27.7496  mae_mu= 1374.5119  time=35.8s
+  SNR=20dB  |  mae_k=   31.9002  mae_mu= 1473.3388  time=37.0s
+  SNR=15dB  |  mae_k=   38.6911  mae_mu= 1650.4502  time=38.1s
+
+============================================================
+Config: k_filter=700, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   18.4452  mae_mu= 1267.5312  time=3.6s
+  SNR=25dB  |  mae_k=   18.8064  mae_mu= 1104.2247  time=3.8s
+  SNR=20dB  |  mae_k=   19.6847  mae_mu=  938.7137  time=3.9s
+  SNR=15dB  |  mae_k=   21.7049  mae_mu=  788.2975  time=3.9s
+
+============================================================
+Config: k_filter=700, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   19.8730  mae_mu=  596.2538  time=3.5s
+  SNR=25dB  |  mae_k=   20.0994  mae_mu=  560.2616  time=3.7s
+  SNR=20dB  |  mae_k=   20.7945  mae_mu=  529.6019  time=3.8s
+  SNR=15dB  |  mae_k=   22.6598  mae_mu=  510.8123  time=3.9s
+
+============================================================
+Config: k_filter=700, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   19.9195  mae_mu=  549.0133  time=3.5s
+  SNR=25dB  |  mae_k=   20.1404  mae_mu=  524.1573  time=3.6s
+  SNR=20dB  |  mae_k=   20.8817  mae_mu=  502.3848  time=3.8s
+  SNR=15dB  |  mae_k=   22.8571  mae_mu=  497.9391  time=3.9s
+
+============================================================
+Config: k_filter=700, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   18.6003  mae_mu=  679.7276  time=3.5s
+  SNR=25dB  |  mae_k=   18.8737  mae_mu=  638.4619  time=3.7s
+  SNR=20dB  |  mae_k=   19.7282  mae_mu=  597.9726  time=3.8s
+  SNR=15dB  |  mae_k=   21.8238  mae_mu=  581.9860  time=3.9s
+
+############################################################
+  CONFIG 12/15: k_filter=700.0, medfilt=7
+############################################################
+
+============================================================
+Config: k_filter=700, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   25.4936  mae_mu=  974.4684  time=51.6s
+  SNR=25dB  |  mae_k=   27.7449  mae_mu= 1010.2861  time=53.8s
+  SNR=20dB  |  mae_k=   31.8871  mae_mu= 1101.3909  time=55.7s
+  SNR=15dB  |  mae_k=   38.6971  mae_mu= 1275.5069  time=57.4s
+
+============================================================
+Config: k_filter=700, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   18.4455  mae_mu=  744.5329  time=5.4s
+  SNR=25dB  |  mae_k=   18.8271  mae_mu=  687.5987  time=5.7s
+  SNR=20dB  |  mae_k=   19.6822  mae_mu=  625.9138  time=5.9s
+  SNR=15dB  |  mae_k=   21.6760  mae_mu=  550.3653  time=6.0s
+
+============================================================
+Config: k_filter=700, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   19.8954  mae_mu=  466.9489  time=5.3s
+  SNR=25dB  |  mae_k=   20.0964  mae_mu=  455.0319  time=5.6s
+  SNR=20dB  |  mae_k=   20.7760  mae_mu=  444.4748  time=5.8s
+  SNR=15dB  |  mae_k=   22.6564  mae_mu=  444.4081  time=5.9s
+
+============================================================
+Config: k_filter=700, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   19.9301  mae_mu=  451.1424  time=5.2s
+  SNR=25dB  |  mae_k=   20.1622  mae_mu=  441.2956  time=5.5s
+  SNR=20dB  |  mae_k=   20.9016  mae_mu=  435.1975  time=5.7s
+  SNR=15dB  |  mae_k=   22.8616  mae_mu=  439.1582  time=5.9s
+
+============================================================
+Config: k_filter=700, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   18.5771  mae_mu=  512.3496  time=5.2s
+  SNR=25dB  |  mae_k=   18.8566  mae_mu=  500.4889  time=5.5s
+  SNR=20dB  |  mae_k=   19.7146  mae_mu=  484.1986  time=5.7s
+  SNR=15dB  |  mae_k=   21.8685  mae_mu=  482.5083  time=5.9s
+
+############################################################
+  CONFIG 13/15: k_filter=1000.0, medfilt=3
+############################################################
+
+============================================================
+Config: k_filter=1000, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.9248  mae_mu= 1941.4389  time=19.3s
+  SNR=25dB  |  mae_k=   34.4030  mae_mu= 2194.6012  time=19.9s
+  SNR=20dB  |  mae_k=   43.1570  mae_mu= 2557.5893  time=20.3s
+  SNR=15dB  |  mae_k=   56.2414  mae_mu= 2904.8437  time=20.9s
+
+============================================================
+Config: k_filter=1000, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   15.2321  mae_mu= 1338.0406  time=2.1s
+  SNR=25dB  |  mae_k=   16.3756  mae_mu= 1103.0720  time=2.1s
+  SNR=20dB  |  mae_k=   18.7436  mae_mu=  885.7615  time=2.1s
+  SNR=15dB  |  mae_k=   22.9750  mae_mu=  744.4414  time=2.2s
+
+============================================================
+Config: k_filter=1000, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   18.6724  mae_mu=  552.4130  time=2.0s
+  SNR=25dB  |  mae_k=   19.4955  mae_mu=  505.0740  time=2.1s
+  SNR=20dB  |  mae_k=   21.6366  mae_mu=  503.2791  time=2.1s
+  SNR=15dB  |  mae_k=   25.8767  mae_mu=  539.6513  time=2.1s
+
+============================================================
+Config: k_filter=1000, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   20.0640  mae_mu=  530.5989  time=2.0s
+  SNR=25dB  |  mae_k=   20.9967  mae_mu=  502.6207  time=2.0s
+  SNR=20dB  |  mae_k=   23.1821  mae_mu=  507.4965  time=2.1s
+  SNR=15dB  |  mae_k=   27.6858  mae_mu=  582.1721  time=2.1s
+
+============================================================
+Config: k_filter=1000, medfilt=3  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   19.0237  mae_mu=  678.9042  time=2.0s
+  SNR=25dB  |  mae_k=   20.1873  mae_mu=  641.4156  time=2.0s
+  SNR=20dB  |  mae_k=   22.8130  mae_mu=  650.8922  time=2.1s
+  SNR=15dB  |  mae_k=   27.9392  mae_mu=  753.7670  time=2.1s
+
+############################################################
+  CONFIG 14/15: k_filter=1000.0, medfilt=5
+############################################################
+
+============================================================
+Config: k_filter=1000, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.9239  mae_mu= 1099.2486  time=34.9s
+  SNR=25dB  |  mae_k=   34.3933  mae_mu= 1259.9731  time=36.1s
+  SNR=20dB  |  mae_k=   43.1780  mae_mu= 1521.2279  time=37.1s
+  SNR=15dB  |  mae_k=   56.2254  mae_mu= 1855.3792  time=37.9s
+
+============================================================
+Config: k_filter=1000, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   15.2073  mae_mu=  638.1094  time=3.6s
+  SNR=25dB  |  mae_k=   16.3983  mae_mu=  548.6209  time=3.7s
+  SNR=20dB  |  mae_k=   18.7420  mae_mu=  470.9245  time=3.8s
+  SNR=15dB  |  mae_k=   22.9543  mae_mu=  431.1106  time=3.9s
+
+============================================================
+Config: k_filter=1000, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   18.6764  mae_mu=  376.4256  time=3.5s
+  SNR=25dB  |  mae_k=   19.5141  mae_mu=  363.4737  time=3.6s
+  SNR=20dB  |  mae_k=   21.6335  mae_mu=  363.1994  time=3.7s
+  SNR=15dB  |  mae_k=   25.9125  mae_mu=  391.1517  time=3.9s
+
+============================================================
+Config: k_filter=1000, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   20.0630  mae_mu=  373.2014  time=3.5s
+  SNR=25dB  |  mae_k=   20.9939  mae_mu=  368.3974  time=3.7s
+  SNR=20dB  |  mae_k=   23.2405  mae_mu=  379.9513  time=3.7s
+  SNR=15dB  |  mae_k=   27.6895  mae_mu=  426.0353  time=3.8s
+
+============================================================
+Config: k_filter=1000, medfilt=5  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   19.0288  mae_mu=  434.5437  time=3.5s
+  SNR=25dB  |  mae_k=   20.1938  mae_mu=  428.0525  time=3.6s
+  SNR=20dB  |  mae_k=   22.7889  mae_mu=  446.3240  time=3.7s
+  SNR=15dB  |  mae_k=   27.9272  mae_mu=  510.2427  time=3.8s
+
+############################################################
+  CONFIG 15/15: k_filter=1000.0, medfilt=7
+############################################################
+
+============================================================
+Config: k_filter=1000, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   28.9111  mae_mu=  845.3369  time=52.9s
+  SNR=25dB  |  mae_k=   34.3990  mae_mu=  991.1262  time=54.7s
+  SNR=20dB  |  mae_k=   43.1623  mae_mu= 1239.2023  time=56.0s
+  SNR=15dB  |  mae_k=   56.2434  mae_mu= 1604.1030  time=57.2s
+
+============================================================
+Config: k_filter=1000, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   15.2381  mae_mu=  383.8744  time=5.4s
+  SNR=25dB  |  mae_k=   16.4003  mae_mu=  363.6500  time=5.6s
+  SNR=20dB  |  mae_k=   18.7023  mae_mu=  336.7970  time=5.8s
+  SNR=15dB  |  mae_k=   22.9629  mae_mu=  319.8659  time=5.8s
+
+============================================================
+Config: k_filter=1000, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   18.6912  mae_mu=  313.3768  time=5.3s
+  SNR=25dB  |  mae_k=   19.5225  mae_mu=  314.0376  time=5.5s
+  SNR=20dB  |  mae_k=   21.6061  mae_mu=  321.1688  time=5.6s
+  SNR=15dB  |  mae_k=   25.9018  mae_mu=  342.0167  time=5.8s
+
+============================================================
+Config: k_filter=1000, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   20.0823  mae_mu=  318.9363  time=5.2s
+  SNR=25dB  |  mae_k=   20.9746  mae_mu=  321.6576  time=5.5s
+  SNR=20dB  |  mae_k=   23.1850  mae_mu=  335.3952  time=5.6s
+  SNR=15dB  |  mae_k=   27.6734  mae_mu=  367.9857  time=5.7s
+
+============================================================
+Config: k_filter=1000, medfilt=7  |  Dataset: pt_files
+============================================================
+  SNR=30dB  |  mae_k=   19.0236  mae_mu=  345.7978  time=5.3s
+  SNR=25dB  |  mae_k=   20.1641  mae_mu=  348.4184  time=5.4s
+  SNR=20dB  |  mae_k=   22.7974  mae_mu=  367.7404  time=5.6s
+  SNR=15dB  |  mae_k=   27.9431  mae_mu=  414.5685  time=5.7s
+
+============================================================
+Sweep complete! 300 rows saved to: /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Model_Logs/DirectInversion_sweep_20260420_143929/direct_inversion_sweep.csv
+============================================================
+
+============================================================
+BEST CONFIG PER DATASET + SNR (by mae_mu)
+============================================================
+  pt_files               SNR=15  →  DI_kf1000_mf7              mae_mu=   319.9  ssim_mu=0.5644
+  pt_files               SNR=20  →  DI_kf1000_mf7              mae_mu=   321.2  ssim_mu=0.6178
+  pt_files               SNR=25  →  DI_kf1000_mf7              mae_mu=   314.0  ssim_mu=0.6575
+  pt_files               SNR=30  →  DI_kf1000_mf7              mae_mu=   313.4  ssim_mu=0.6716
+---------------------------------------
+Begin Slurm Epilog: Apr-20-2026 15:33:53
+Job ID:        6670028
+User ID:       jueda3
+Account:       gts-jueda3
+Job name:      di_sweep
+Resources:     cpu=8,gres/gpu:h100=1,mem=40G,node=1
+Rsrc Used:     cput=07:15:28,vmem=0,walltime=00:54:26,mem=10328K,energy_used=0
+Partition:     gpu-h100
+QOS:           inferno
+Nodes:         atl1-1-01-006-29-0
+---------------------------------------

@@ -130,7 +130,7 @@ def get_dataloader_for_train(dir_input, offsets=8, fov=0.2, batch_size=10, snr_d
 
     return dataloaders['train']
 
-def get_Pdataloader_for_train(dir_input, offsets=8, fov=0.2, batch_size=10, snr_db=None, normalize_wave=True):
+def get_Pdataloader_for_train(dir_input, offsets=8, fov=0.2, batch_size=10, snr_db=None, normalize_wave=False):
     #ids = [f[:-4] for f in os.listdir(dir_input)]
     #ids = [f[:-4] for f in os.listdir(dir_input) if os.path.isfile(os.path.join(dir_input, f))]
     transform = AddGaussianNoiseSNR(snr_db) if snr_db is not None else None
@@ -151,7 +151,7 @@ def get_dataloader_for_val(dir_input, offsets=8, fov=0.2, batch_size=10, snr_db=
 
     return dataloaders['val']
 
-def get_Pdataloader_for_val(dir_input, offsets=8, fov=0.2, batch_size=10, snr_db=None, normalize_wave=True):
+def get_Pdataloader_for_val(dir_input, offsets=8, fov=0.2, batch_size=10, snr_db=None, normalize_wave=False):
     #ids = [f[:-4] for f in os.listdir(dir_input)]
     #ids = [f[:-4] for f in os.listdir(dir_input) if os.path.isfile(os.path.join(dir_input, f))]
     transform = AddGaussianNoiseSNR(snr_db) if snr_db is not None else None
@@ -174,7 +174,7 @@ def get_Pdataloader_for_val(dir_input, offsets=8, fov=0.2, batch_size=10, snr_db
 #     return dataloaders['test']
 # -
 
-def get_dataloader_for_test(dir_input, offsets=8, fov=0.2, batch_size=10, snr_db=None, normalize_wave=True):
+def get_dataloader_for_test(dir_input, offsets=8, fov=0.2, batch_size=10, snr_db=None, normalize_wave=False):
     #ids = [f[:-4] for f in os.listdir(dir_input)]
     #ids = [f[:-4] for f in os.listdir(dir_input) if os.path.isfile(os.path.join(dir_input, f))]
     transform = AddGaussianNoiseSNR(snr_db) if snr_db is not None else None

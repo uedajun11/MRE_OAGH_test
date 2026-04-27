@@ -1,0 +1,55 @@
+{
+  "timestamp": "20260422_153640",
+  "run_ids": [
+    "run_20260420_144125",
+    "run_20260420_153849",
+    "run_20260420_160128",
+    "run_20260420_181305",
+    "run_20260420_182234",
+    "run_20260420_201733",
+    "run_20260420_205500",
+    "run_20260420_211456",
+    "run_20260420_220223"
+  ],
+  "report_to_run_mapping": {
+    "Report-direct_inv_sweep-6670028.out": null,
+    "Report-fixed_het-6670029.out": "run_20260420_144125",
+    "Report-fixed_hom-6670030.out": null,
+    "Report-het_gradnorm-6670031.out": "run_20260420_153849",
+    "Report-het_oagh-6670033.out": "run_20260420_160128",
+    "Report-het_oagh_c-6670032.out": "run_20260420_153849",
+    "Report-het_pcgrad-6670034.out": "run_20260420_181305",
+    "Report-hom_gradnorm-6670035.out": "run_20260420_182234",
+    "Report-hom_oagh-6670037.out": "run_20260420_205500",
+    "Report-hom_oagh_c-6670036.out": "run_20260420_201733",
+    "Report-hom_pcgrad-6670038.out": "run_20260420_211456",
+    "Report-mse_only-6670039.out": "run_20260420_220223"
+  },
+  "num_models": 10,
+  "datasets": [
+    "Main_Test",
+    "Inclusion_R0.3125cm",
+    "Inclusion_R0.625cm",
+    "Inclusion_R1.25cm",
+    "Inclusion_R2.5cm"
+  ],
+  "snr_levels": [
+    30,
+    25,
+    20,
+    15
+  ],
+  "total_samples_evaluated": 56000,
+  "models_evaluated": [
+    "FDTDNet/Norm/mse/lam_data1_0/lam_phys0_0/bs64",
+    "FDTDNet/Norm/residual/het/gradnorm/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/Norm/residual/het/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/Norm/residual/het/oagh/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/Norm/residual/het/oagh_c/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/Norm/residual/het/pcgrad/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/Norm/residual/hom/gradnorm/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/Norm/residual/hom/oagh/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/Norm/residual/hom/oagh_c/lam_data1_0/lam_phys1_0/bs64",
+    "FDTDNet/Norm/residual/hom/pcgrad/lam_data1_0/lam_phys1_0/bs64"
+  ]
+}

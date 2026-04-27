@@ -496,7 +496,7 @@ def setup_and_run_train(
     lambda_data_str = str(lambda_data).replace('.', '_')
     lambda_physics_str = str(lambda_physics).replace('.', '_')
     
-    path_components = [dir_model, arch_type, 'Norm']
+    path_components = [dir_model, arch_type]
     if arch_subtype:
         path_components.append(arch_subtype)
     
