@@ -37,7 +37,7 @@ CMD="apptainer exec --nv \
 --train-input /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Training/ \
 --validation-input /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Data/Validation/pt_files/ \
 --model /storage/project/r-jueda3-0/jueda3/MRE_OAGH_test/MinimalCode_3_5_2026/Model_Logs/ \
---offsets 8 \
+--offsets 4 \
 --field-of-view 0.2 \
 --arch-type FDTDNet \
 --arch-subtype None \

@@ -42,7 +42,7 @@ CMD="apptainer exec --nv \
   $DATA_DIR/Inclusion/R2_5cm/pt_files/ \
 --output-dir $OUTPUT_DIR \
 --fov 0.2 \
---offsets 8 \
+--offsets 4 \
 --snr-levels 30 25 20 15 \
 --k-filter-sweep 200 300 500 700 1000 \
 --medfilt-sweep 3 5 7"
